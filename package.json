@@ -1,0 +1,13 @@
+{
+  "name": "weavehub-site",
+  "version": "1.0.0",
+  "description": "Official website for the WeaveHub artisan marketplace app",
+  "scripts": {
+    "dev": "npx serve . --listen 3000 --no-clipboard",
+    "start": "npx serve . --listen 3000"
+  },
+  "keywords": ["weavehub", "artisan", "marketplace"],
+  "author": "Weavehub Technologies Ltd.",
+  "license": "UNLICENSED",
+  "private": true
+}

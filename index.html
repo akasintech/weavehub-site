@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WeaveHub – The Marketplace for Artisans & Craft Lovers</title>
+  <meta name="description" content="WeaveHub connects talented artisans and craft vendors with buyers across the globe. Shop unique handmade products, support local creators, and discover authentic crafts on iOS and Android." />
+  <meta name="keywords" content="WeaveHub, artisan marketplace, handmade products, craft vendors, buy handmade, live shopping, artisan app" />
+  <meta name="author" content="Weavehub Technologies Ltd." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://weavehub.io/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://weavehub.io/" />
+  <meta property="og:title" content="WeaveHub – The Marketplace for Artisans & Craft Lovers" />
+  <meta property="og:description" content="Shop unique handmade products, support artisans, and discover authentic crafts. Download WeaveHub on iOS or Android." />
+  <meta property="og:image" content="https://weavehub.io/icon.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="WeaveHub – Artisan Marketplace App" />
+  <meta name="twitter:description" content="Discover handmade products, shop live streams, and support craft vendors worldwide." />
+  <meta name="twitter:image" content="https://weavehub.io/icon.png" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="icon.png" />
+  <link rel="apple-touch-icon" href="icon.png" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ─── NAVBAR ─────────────────────────────────────────────────────────── -->
+  <nav class="navbar" id="navbar" role="navigation" aria-label="Main navigation">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo" aria-label="WeaveHub Home">
+        <img src="icon.png" alt="WeaveHub logo" class="nav-logo-img" />
+        <span class="nav-logo-text">WeaveHub</span>
+      </a>
+      <ul class="nav-links" id="nav-links" role="list">
+        <li><a href="#features" class="nav-link">Features</a></li>
+        <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+        <li><a href="#vendors" class="nav-link">For Vendors</a></li>
+        <li><a href="privacy.html" class="nav-link">Privacy</a></li>
+        <li><a href="contact.html" class="nav-link">Support</a></li>
+      </ul>
+      <a href="#download" class="btn btn-primary nav-cta" id="nav-download-btn">Download App</a>
+      <button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false" aria-controls="nav-links">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ─── HERO ───────────────────────────────────────────────────────────── -->
+  <section class="hero" aria-labelledby="hero-heading">
+    <div class="hero-bg-orbs" aria-hidden="true">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+    </div>
+    <div class="container hero-content">
+      <div class="hero-text">
+        <div class="hero-badge" aria-label="New">
+          <span class="badge-dot" aria-hidden="true"></span>
+          Now available on iOS &amp; Android
+        </div>
+        <h1 id="hero-heading" class="hero-title">
+          The Marketplace<br/>
+          <span class="gradient-text">Built for Artisans</span><br/>
+          &amp; Craft Lovers
+        </h1>
+        <p class="hero-subtitle">
+          Discover unique handmade products, support local vendors, shop live streams, 
+          and connect directly with talented artisans across the globe.
+        </p>
+        <div class="hero-actions">
+          <a href="#download" class="btn btn-primary btn-lg" id="hero-ios-btn">
+            <svg class="icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" fill="currentColor" stroke="none"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-16.9 75.8-16.9 31.8 0 48.3 16.9 76.4 16.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+            App Store
+          </a>
+          <a href="#download" class="btn btn-outline btn-lg" id="hero-android-btn">
+            <svg class="icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" fill="currentColor" stroke="none"><path d="M420.55,301.93a24,24,0,1,1,24-24,24,24,0,0,1-24,24m-265.1,0a24,24,0,1,1,24-24,24,24,0,0,1-24,24m273.7-144.48,47.94-83a10,10,0,1,0-17.27-10h0l-48.54,84.07a301.25,301.25,0,0,0-246.56,0L116.18,64.45a10,10,0,1,0-17.27,10h0l47.88,83C64.53,202.22,8.24,285.55,0,384H576c-8.24-98.45-64.54-181.78-146.85-226.55"/></svg>
+            Google Play
+          </a>
+        </div>
+        <div class="hero-stats">
+          <div class="stat-item">
+            <span class="stat-number">10K+</span>
+            <span class="stat-label">Products</span>
+          </div>
+          <div class="stat-divider" aria-hidden="true"></div>
+          <div class="stat-item">
+            <span class="stat-number">500+</span>
+            <span class="stat-label">Vendors</span>
+          </div>
+          <div class="stat-divider" aria-hidden="true"></div>
+          <div class="stat-item">
+            <span class="stat-number">50+</span>
+            <span class="stat-label">Categories</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="phone-mockup" aria-hidden="true">
+          <div class="phone-frame">
+            <div class="phone-screen">
+              <div class="phone-notch"></div>
+              <div class="mock-screen">
+                <div class="mock-header">
+                  <img src="icon.png" alt="" class="mock-logo" />
+                  <span class="mock-brand">WeaveHub</span>
+                  <svg class="icon mock-search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </div>
+                <div class="mock-banner">
+                  <img src="banner1.jpg" alt="WeaveHub products" class="mock-banner-img" />
+                </div>
+                <div class="mock-chips">
+                  <div class="chip chip-active">All</div>
+                  <div class="chip">Trending</div>
+                  <div class="chip">For You</div>
+                  <div class="chip">Crafts</div>
+                </div>
+                <div class="mock-grid">
+                  <div class="mock-card">
+                    <div class="mock-card-img" style="background: #e2e8f0;"></div>
+                    <div class="mock-card-body">
+                      <div class="mock-card-title"></div>
+                      <div class="mock-card-price"></div>
+                    </div>
+                  </div>
+                  <div class="mock-card">
+                    <div class="mock-card-img" style="background: #cbd5e1;"></div>
+                    <div class="mock-card-body">
+                      <div class="mock-card-title"></div>
+                      <div class="mock-card-price"></div>
+                    </div>
+                  </div>
+                  <div class="mock-card">
+                    <div class="mock-card-img" style="background: #94a3b8;"></div>
+                    <div class="mock-card-body">
+                      <div class="mock-card-title"></div>
+                      <div class="mock-card-price"></div>
+                    </div>
+                  </div>
+                  <div class="mock-card">
+                    <div class="mock-card-img" style="background: #64748b;"></div>
+                    <div class="mock-card-body">
+                      <div class="mock-card-title"></div>
+                      <div class="mock-card-price"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-wave" aria-hidden="true">
+      <svg viewBox="0 0 1440 100" preserveAspectRatio="none"><path d="M0,60 C360,100 1080,0 1440,60 L1440,100 L0,100 Z" fill="var(--bg)"/></svg>
+    </div>
+  </section>
+
+  <!-- ─── MARQUEE / TRUST BAR ────────────────────────────────────────────── -->
+  <div class="trust-bar" aria-label="Supported features">
+    <div class="trust-marquee">
+      <div class="trust-track">
+        <span class="trust-item"><svg class="icon" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg> Handmade Crafts</span>
+        <span class="trust-sep" aria-hidden="true">•</span>
+        <span class="trust-item"><svg class="icon" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg> Live Shopping</span>
+        <span class="trust-sep" aria-hidden="true">•</span>
+        <span class="trust-item"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Direct Messaging</span>
+        <span class="trust-sep" aria-hidden="true">•</span>
+        <span class="trust-item"><svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Vendor Stores</span>
+        <span class="trust-sep" aria-hidden="true">•</span>
+        <span class="trust-item"><svg class="icon" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Wishlists</span>
+        <span class="trust-sep" aria-hidden="true">•</span>
+        <span class="trust-item"><svg class="icon" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Discount Coupons</span>
+        <span class="trust-sep" aria-hidden="true">•</span>
+        <span class="trust-item"><svg class="icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> Order Tracking</span>
+        <span class="trust-sep" aria-hidden="true">•</span>
+        <!-- Duplicate for loop -->
+        <span class="trust-item"><svg class="icon" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg> Handmade Crafts</span>
+        <span class="trust-sep" aria-hidden="true">•</span>
+        <span class="trust-item"><svg class="icon" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg> Live Shopping</span>
+        <span class="trust-sep" aria-hidden="true">•</span>
+        <span class="trust-item"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Direct Messaging</span>
+        <span class="trust-sep" aria-hidden="true">•</span>
+        <span class="trust-item"><svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Vendor Stores</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── FEATURES ──────────────────────────────────────────────────────── -->
+  <section class="section" id="features" aria-labelledby="features-heading">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-badge">Features</div>
+        <h2 id="features-heading" class="section-title">Everything you need<br/><span class="gradient-text">in one app</span></h2>
+        <p class="section-subtitle">WeaveHub brings together buyers, artisans, and vendors in a seamless marketplace experience packed with powerful features.</p>
+      </div>
+      <div class="features-grid">
+
+        <article class="feature-card feature-card--large" id="feature-live">
+          <div class="feature-card-inner">
+            <div class="feature-icon-wrap">
+              <svg class="icon" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            </div>
+            <h3 class="feature-title">Live Shopping Streams</h3>
+            <p class="feature-desc">Vendors go live to showcase their products in real-time. Watch, comment, and buy during live sessions — a completely interactive shopping experience.</p>
+            <div class="feature-pill"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg> Live Stream Ready</div>
+          </div>
+        </article>
+
+        <article class="feature-card" id="feature-discover">
+          <div class="feature-card-inner">
+            <div class="feature-icon-wrap">
+              <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <h3 class="feature-title">Smart Recommendations</h3>
+            <p class="feature-desc">A personalised feed that learns your preferences and highlights curated artisan crafts tailored to your taste.</p>
+          </div>
+        </article>
+
+        <article class="feature-card" id="feature-chat">
+          <div class="feature-card-inner">
+            <div class="feature-icon-wrap">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <h3 class="feature-title">Direct Messaging</h3>
+            <p class="feature-desc">Connect directly with vendors, inquire about custom orders, and ask questions right from the app.</p>
+          </div>
+        </article>
+
+        <article class="feature-card" id="feature-search">
+          <div class="feature-card-inner">
+            <div class="feature-icon-wrap">
+              <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
+            <h3 class="feature-title">Search &amp; Discovery</h3>
+            <p class="feature-desc">Easily browse thousands of unique products across multiple categories with intelligent filters and instant search.</p>
+          </div>
+        </article>
+
+        <article class="feature-card" id="feature-wallet">
+          <div class="feature-card-inner">
+            <div class="feature-icon-wrap">
+              <svg class="icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            </div>
+            <h3 class="feature-title">In-App Wallet</h3>
+            <p class="feature-desc">Top up your balance, track transactions, and enjoy fast, secure one-tap checkouts anytime.</p>
+          </div>
+        </article>
+
+        <article class="feature-card" id="feature-coupons">
+          <div class="feature-card-inner">
+            <div class="feature-icon-wrap">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            </div>
+            <h3 class="feature-title">Coupons &amp; Offers</h3>
+            <p class="feature-desc">Unlock special vendor discounts, seasonal deals, and reward vouchers on your favorite products.</p>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── HOW IT WORKS ──────────────────────────────────────────────────── -->
+  <section class="section section--alt" id="how-it-works" aria-labelledby="how-heading">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-badge">How It Works</div>
+        <h2 id="how-heading" class="section-title">Start shopping in<br/><span class="gradient-text">3 simple steps</span></h2>
+      </div>
+      <div class="steps-grid">
+        <div class="step-card" id="step-1">
+          <div class="step-number">01</div>
+          <div class="step-icon-wrap" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          </div>
+          <h3 class="step-title">Download the App</h3>
+          <p class="step-desc">Get WeaveHub free on iOS or Android. Create your account in seconds via Google, Apple, or email.</p>
+        </div>
+        <div class="step-connector" aria-hidden="true">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+        <div class="step-card" id="step-2">
+          <div class="step-number">02</div>
+          <div class="step-icon-wrap" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <h3 class="step-title">Explore &amp; Discover</h3>
+          <p class="step-desc">Browse handmade items, watch live seller streams, and save your favourite finds to your personal wishlist.</p>
+        </div>
+        <div class="step-connector" aria-hidden="true">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+        <div class="step-card" id="step-3">
+          <div class="step-number">03</div>
+          <div class="step-icon-wrap" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </div>
+          <h3 class="step-title">Order &amp; Enjoy</h3>
+          <p class="step-desc">Checkout securely with your in-app wallet or payment card, track shipping, and receive authentic goods.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FOR VENDORS ───────────────────────────────────────────────────── -->
+  <section class="section" id="vendors" aria-labelledby="vendors-heading">
+    <div class="container">
+      <div class="vendor-split">
+        <div class="vendor-text">
+          <div class="section-badge">For Vendors</div>
+          <h2 id="vendors-heading" class="section-title">Grow your craft<br/><span class="gradient-text">business online</span></h2>
+          <p class="vendor-subtitle">WeaveHub gives artisans and sellers every tool to run a thriving storefront without technical complexity.</p>
+          <ul class="vendor-features" role="list">
+            <li class="vendor-feature-item">
+              <div class="vfi-icon" aria-hidden="true">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              </div>
+              <div>
+                <strong>Custom Storefront</strong>
+                <p>Set up your shop with your brand logo, banner, bio, and catalog listings.</p>
+              </div>
+            </li>
+            <li class="vendor-feature-item">
+              <div class="vfi-icon" aria-hidden="true">
+                <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              </div>
+              <div>
+                <strong>Analytics &amp; Insights</strong>
+                <p>Track store performance, views, revenue metrics, and order fulfillment in real-time.</p>
+              </div>
+            </li>
+            <li class="vendor-feature-item">
+              <div class="vfi-icon" aria-hidden="true">
+                <svg class="icon" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+              </div>
+              <div>
+                <strong>Live Stream Shopping</strong>
+                <p>Host live broadcasts to present items directly to active buyers and boost sales.</p>
+              </div>
+            </li>
+          </ul>
+          <a href="contact.html" class="btn btn-accent" id="vendor-signup-btn">Become a Vendor</a>
+        </div>
+        <div class="vendor-visual" aria-hidden="true">
+          <div class="dashboard-mock">
+            <div class="dash-header">
+              <div class="dash-title-row">
+                <span class="dash-title">Vendor Dashboard</span>
+                <span class="dash-live-badge"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg> LIVE</span>
+              </div>
+            </div>
+            <div class="dash-stats">
+              <div class="dash-stat">
+                <div class="dash-stat-val">₦284,500</div>
+                <div class="dash-stat-lbl">Revenue</div>
+              </div>
+              <div class="dash-stat">
+                <div class="dash-stat-val">142</div>
+                <div class="dash-stat-lbl">Orders</div>
+              </div>
+              <div class="dash-stat">
+                <div class="dash-stat-val">89</div>
+                <div class="dash-stat-lbl">Products</div>
+              </div>
+            </div>
+            <div class="dash-chart">
+              <div class="dash-bar" style="height:40%"></div>
+              <div class="dash-bar" style="height:65%"></div>
+              <div class="dash-bar" style="height:55%"></div>
+              <div class="dash-bar" style="height:80%"></div>
+              <div class="dash-bar" style="height:70%"></div>
+              <div class="dash-bar dash-bar--active" style="height:95%"></div>
+              <div class="dash-bar" style="height:75%"></div>
+            </div>
+            <div class="dash-orders">
+              <div class="dash-order-row">
+                <div class="dash-order-dot" style="background:#1E9E52"></div>
+                <span>Woven Basket Set</span>
+                <span class="dash-order-status">Shipped</span>
+              </div>
+              <div class="dash-order-row">
+                <div class="dash-order-dot" style="background:#1F3A5F"></div>
+                <span>Clay Earrings</span>
+                <span class="dash-order-status pending">Processing</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── DOWNLOAD CTA ───────────────────────────────────────────────────── -->
+  <section class="section download-section" id="download" aria-labelledby="download-heading">
+    <div class="container">
+      <div class="download-card">
+        <div class="download-content">
+          <img src="icon.png" alt="WeaveHub App Icon" class="download-icon" />
+          <h2 id="download-heading" class="download-title">Ready to start shopping?</h2>
+          <p class="download-subtitle">Join thousands of shoppers and artisans on WeaveHub today. Available on iOS and Android.</p>
+          <div class="download-buttons">
+            <a href="#" class="store-btn" id="dl-ios-btn" aria-label="Download on App Store">
+              <svg class="icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" fill="currentColor" stroke="none"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-16.9 75.8-16.9 31.8 0 48.3 16.9 76.4 16.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+              <div>
+                <div class="store-btn-sub">Download on the</div>
+                <div class="store-btn-main">App Store</div>
+              </div>
+            </a>
+            <a href="#" class="store-btn" id="dl-android-btn" aria-label="Get it on Google Play">
+              <svg class="icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" fill="currentColor" stroke="none"><path d="M420.55,301.93a24,24,0,1,1,24-24,24,24,0,0,1-24,24m-265.1,0a24,24,0,1,1,24-24,24,24,0,0,1-24,24m273.7-144.48,47.94-83a10,10,0,1,0-17.27-10h0l-48.54,84.07a301.25,301.25,0,0,0-246.56,0L116.18,64.45a10,10,0,1,0-17.27,10h0l47.88,83C64.53,202.22,8.24,285.55,0,384H576c-8.24-98.45-64.54-181.78-146.85-226.55"/></svg>
+              <div>
+                <div class="store-btn-sub">Get it on</div>
+                <div class="store-btn-main">Google Play</div>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ─────────────────────────────────────────────────────────── -->
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="nav-logo" aria-label="WeaveHub Home">
+            <img src="icon.png" alt="WeaveHub logo" class="nav-logo-img" />
+            <span class="nav-logo-text">WeaveHub</span>
+          </a>
+          <p class="footer-tagline">The marketplace for artisans &amp; craft lovers worldwide.</p>
+          <div class="footer-socials">
+            <a href="#" class="social-link" aria-label="WeaveHub on Twitter">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg>
+            </a>
+            <a href="#" class="social-link" aria-label="WeaveHub on Instagram">
+              <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+            </a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4 class="footer-col-title">Company</h4>
+          <ul class="footer-links" role="list">
+            <li><a href="#features" class="footer-link">Features</a></li>
+            <li><a href="#vendors" class="footer-link">For Vendors</a></li>
+            <li><a href="#how-it-works" class="footer-link">How It Works</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4 class="footer-col-title">Legal</h4>
+          <ul class="footer-links" role="list">
+            <li><a href="privacy.html" class="footer-link">Privacy Policy</a></li>
+            <li><a href="contact.html" class="footer-link">Support</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4 class="footer-col-title">Contact</h4>
+          <ul class="footer-links" role="list">
+            <li><a href="mailto:hello@weavehub.io" class="footer-link">hello@weavehub.io</a></li>
+            <li><a href="mailto:privacy@weavehub.io" class="footer-link">privacy@weavehub.io</a></li>
+            <li><a href="contact.html" class="footer-link">Support Center</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© <span id="footer-year"></span> Weavehub Technologies Ltd. Lagos, Nigeria. All rights reserved.</p>
+        <p class="footer-bottom-links">
+          <a href="privacy.html" class="footer-link">Privacy</a> ·
+          <a href="contact.html" class="footer-link">Contact</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>
