@@ -122,6 +122,7 @@ export function Products() {
 
         {/* Controls: Search & Sort */}
         <div
+          className="products-controls"
           style={{
             display: "flex",
             justifyContent: "space-between",
