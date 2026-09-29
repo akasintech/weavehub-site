@@ -77,6 +77,11 @@ export function Footer() {
             <h4 className="footer-col-title">Legal &amp; Support</h4>
             <ul className="footer-links" role="list">
               <li>
+                <Link to="/about" className="footer-link">
+                  About Us
+                </Link>
+              </li>
+              <li>
                 <Link to="/privacy" className="footer-link">
                   Privacy Policy
                 </Link>

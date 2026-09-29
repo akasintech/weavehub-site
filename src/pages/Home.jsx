@@ -208,21 +208,21 @@ export function Home() {
         </div>
       </div>
 
-      {/* ── FEATURED PRODUCTS (REAL BACKEND DATA) ──────────────────────── */}
+      {/* ── TRENDING PRODUCTS (REAL BACKEND DATA) ──────────────────────── */}
       <section className="section" aria-labelledby="featured-products-heading">
         <div className="container">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "32px", flexWrap: "wrap", gap: "16px" }}>
             <div>
-              <div className="section-badge">Marketplace</div>
+              <div className="section-badge">🔥 Trending</div>
               <h2 id="featured-products-heading" className="section-title" style={{ marginBottom: "6px" }}>
-                Featured Creations
+                Trending Products
               </h2>
               <p style={{ color: "var(--text-muted)", fontSize: "15px" }}>
-                Handpicked items crafted by verified artisans and sellers on WeaveHub.
+                The hottest handcrafted picks right now — loved by shoppers across WeaveHub.
               </p>
             </div>
             <Link to="/products" className="btn btn-outline">
-              <span>View All Products</span>
+              <span>See All Products</span>
               <ArrowRight size={16} />
             </Link>
           </div>
@@ -235,6 +235,15 @@ export function Home() {
             emptyTitle="No products currently listed"
             emptyMessage="New artisan collections are being added daily. Check back soon or download the app."
           />
+
+          {!loadingProducts && featuredProducts.length > 0 && (
+            <div style={{ textAlign: "center", marginTop: "36px" }}>
+              <Link to="/products" className="btn btn-primary btn-lg">
+                <span>See All Products</span>
+                <ArrowRight size={18} />
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 

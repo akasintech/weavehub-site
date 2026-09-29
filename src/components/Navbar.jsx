@@ -70,6 +70,14 @@ export function Navbar() {
             </li>
             <li>
               <NavLink
+                to="/about"
+                className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}
+              >
+                About
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
                 to="/download"
                 className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}
               >
@@ -216,6 +224,14 @@ export function Navbar() {
             style={{ fontSize: "16px", padding: "10px 14px" }}
           >
             Download App
+          </NavLink>
+          <NavLink
+            to="/about"
+            className="nav-link"
+            onClick={closeMenu}
+            style={{ fontSize: "16px", padding: "10px 14px" }}
+          >
+            About Us
           </NavLink>
           <NavLink
             to="/privacy"

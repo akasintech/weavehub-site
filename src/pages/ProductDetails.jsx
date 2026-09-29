@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getProductById, getProductReviews, getProductComments } from "../api/products";
+import { getProductById, getProductReviews, getProductComments, getProducts } from "../api/products";
 import { getCategories } from "../api/categories";
 import { ProductImageGallery } from "../components/ProductImageGallery";
 import { ProductPrice } from "../components/ProductPrice";
 import { ProductVariants } from "../components/ProductVariants";
 import { BuyOnAppButton } from "../components/BuyOnAppButton";
+import { ProductCard } from "../components/ProductCard";
 import { updateSEO } from "../utils/seo";
 import {
   Store,
@@ -17,6 +18,8 @@ import {
   AlertCircle,
   ChevronRight,
   Sparkles,
+  ArrowRight,
+  ShoppingBag,
 } from "lucide-react";
 
 export function ProductDetails() {
@@ -27,6 +30,8 @@ export function ProductDetails() {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [similarProducts, setSimilarProducts] = useState([]);
+  const [boughtTogetherProducts, setBoughtTogetherProducts] = useState([]);
 
   useEffect(() => {
     loadProduct();
@@ -64,6 +69,28 @@ export function ProductDetails() {
       // Attempt non-critical reviews and comments
       getProductReviews(id).then((r) => setReviews(r || []));
       getProductComments(id).then((c) => setComments(c || []));
+
+      // Fetch similar products (same category, exclude current)
+      if (item.categoryId) {
+        getProducts({ categoryId: item.categoryId, categoriesList: categories }).then((all) => {
+          const filtered = all.filter((p) => p.id !== id);
+          setSimilarProducts(filtered.slice(0, 4));
+          // Use a different slice for "frequently bought together"
+          setBoughtTogetherProducts(
+            filtered
+              .slice(4, 8)
+              .concat(filtered.slice(0, Math.max(0, 4 - Math.max(0, filtered.length - 4))))
+              .slice(0, 4)
+          );
+        }).catch(() => {});
+      } else {
+        // Fallback: fetch general products
+        getProducts({ categoriesList: categories }).then((all) => {
+          const filtered = all.filter((p) => p.id !== id);
+          setSimilarProducts(filtered.slice(0, 4));
+          setBoughtTogetherProducts(filtered.slice(4, 8));
+        }).catch(() => {});
+      }
     } catch (err) {
       console.error("Failed to load product details:", err);
       setError(err);
@@ -348,6 +375,60 @@ export function ProductDetails() {
             )}
           </div>
         </div>
+
+        {/* ── FREQUENTLY BOUGHT TOGETHER ─────────────────────────────── */}
+        {boughtTogetherProducts.length > 0 && (
+          <div style={{ marginTop: "56px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                  <ShoppingBag size={18} style={{ color: "var(--primary-dark)" }} />
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--primary-dark)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Frequently Bought Together</span>
+                </div>
+                <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: "clamp(18px, 2.5vw, 24px)", fontWeight: 800, color: "var(--secondary)" }}>
+                  Customers also purchased
+                </h2>
+              </div>
+              <Link to="/products" className="btn btn-outline" style={{ fontSize: "13px" }}>
+                <span>View All</span>
+                <ArrowRight size={14} />
+              </Link>
+            </div>
+            <div className="recommendations-grid">
+              {boughtTogetherProducts.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── SIMILAR PRODUCTS ────────────────────────────────────────── */}
+        {similarProducts.length > 0 && (
+          <div style={{ marginTop: "56px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                  <Sparkles size={18} style={{ color: "var(--primary-dark)" }} />
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--primary-dark)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Similar Products</span>
+                </div>
+                <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: "clamp(18px, 2.5vw, 24px)", fontWeight: 800, color: "var(--secondary)" }}>
+                  You might also like
+                </h2>
+              </div>
+              {product.categoryId && (
+                <Link to={`/categories/${product.categoryId}`} className="btn btn-outline" style={{ fontSize: "13px" }}>
+                  <span>More in {product.category}</span>
+                  <ArrowRight size={14} />
+                </Link>
+              )}
+            </div>
+            <div className="recommendations-grid">
+              {similarProducts.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

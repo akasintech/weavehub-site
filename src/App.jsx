@@ -14,6 +14,7 @@ import { Download } from "./pages/Download";
 import { OpenProduct } from "./pages/OpenProduct";
 import { Privacy } from "./pages/Privacy";
 import { Contact } from "./pages/Contact";
+import { About } from "./pages/About";
 import { NotFound } from "./pages/NotFound";
 
 function ScrollToTop() {
@@ -43,6 +44,7 @@ export function App() {
           <Route path="/open/product/:id" element={<OpenProduct />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/about" element={<About />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
