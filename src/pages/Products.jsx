@@ -32,7 +32,7 @@ export function Products() {
 
   useEffect(() => {
     loadProducts();
-  }, [selectedCategory]);
+  }, [categories]);
 
   const loadCategories = async () => {
     try {
@@ -47,10 +47,9 @@ export function Products() {
     setLoading(true);
     setError(null);
     try {
-      const categoryId = selectedCategory === "all" ? null : selectedCategory;
       const data = await getProducts({
-        categoryId,
         categoriesList: categories,
+        limit: 50,
       });
       setProducts(data);
     } catch (err) {
@@ -80,9 +79,31 @@ export function Products() {
     setSearchParams(searchParams);
   };
 
-  // Filter & Sort
+  // Filter & Sort — matches the WeaveHub mobile app's in-memory filtering approach
   const processedProducts = useMemo(() => {
     let list = [...products];
+
+    // Category filter
+    if (selectedCategory && selectedCategory !== "all") {
+      list = list.filter((p) => {
+        // Match by category ID
+        if (p.categoryId === selectedCategory) return true;
+        // Match by category name
+        if (p.category && p.category.toLowerCase() === selectedCategory.toLowerCase()) return true;
+        // Match in categories array
+        if (Array.isArray(p.categories)) {
+          return p.categories.some((c) => {
+            const cId = typeof c === "object" ? c._id || c.id : c;
+            const cName = typeof c === "object" ? c.name : String(c);
+            return (
+              cId === selectedCategory ||
+              cName?.toLowerCase() === selectedCategory?.toLowerCase()
+            );
+          });
+        }
+        return false;
+      });
+    }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
@@ -104,7 +125,7 @@ export function Products() {
     }
 
     return list;
-  }, [products, searchQuery, sortBy]);
+  }, [products, selectedCategory, searchQuery, sortBy]);
 
   return (
     <div style={{ paddingTop: "calc(var(--nav-h) + 24px)", paddingBottom: "64px" }}>

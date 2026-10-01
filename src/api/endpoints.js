@@ -8,7 +8,7 @@ export const ENDPOINTS = {
     all: "/products",
     product: (productId) => `/products/${productId}`,
     list: (categoryId) =>
-      categoryId ? `/products?categoryId=${categoryId}` : "/products/search",
+      categoryId ? `/products/search?category=${categoryId}` : "/products/search",
     attributes: (productId) => `/products/attributes/${productId}`,
   },
   category: {

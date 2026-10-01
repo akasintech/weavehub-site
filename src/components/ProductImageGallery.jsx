@@ -32,17 +32,26 @@ export function ProductImageGallery({
             autoPlay
             muted
             loop
+            className="gallery-video"
             style={{
               width: "100%",
               height: "100%",
               maxWidth: "100%",
               display: "block",
               objectFit: "cover",
+              backgroundColor: "#0b0f19",
             }}
           />
         ) : (
           <img
             src={activeItem}
+            className="gallery-img"
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "block",
+              objectFit: "cover",
+            }}
             alt={`${productName} view ${activeIndex + 1}`}
             onError={(e) => {
               e.currentTarget.onerror = null;

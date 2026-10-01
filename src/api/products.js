@@ -14,10 +14,10 @@ function unwrapRecords(response) {
 }
 
 export async function getProducts(options = {}) {
-  const { categoryId, search, categoriesList = [] } = options;
+  const { categoryId, search, categoriesList = [], limit = 50 } = options;
   const endpoint = ENDPOINTS.product.list(categoryId);
 
-  const params = {};
+  const params = { limit };
   if (search && search.trim()) {
     params.name = search.trim();
   }
