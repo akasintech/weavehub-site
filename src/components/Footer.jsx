@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Twitter, Instagram, Mail, Shield, HelpCircle } from "lucide-react";
+import { Twitter, Instagram, Mail } from "lucide-react";
+import { Wordmark } from "./ui";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -12,7 +13,7 @@ export function Footer() {
           <div className="footer-brand">
             <Link to="/" className="nav-logo" aria-label="WeaveHub Home">
               <img src="/icon.png" alt="WeaveHub logo" className="nav-logo-img" />
-              <span className="nav-logo-text">WeaveHub</span>
+              <Wordmark />
             </Link>
             <p className="footer-tagline">
               The premier mobile marketplace for artisans &amp; craft lovers worldwide.
@@ -61,6 +62,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link to="/stores" className="footer-link">
+                  Browse Stores
+                </Link>
+              </li>
+              <li>
                 <Link to="/search" className="footer-link">
                   Search Crafts
                 </Link>
@@ -101,7 +107,7 @@ export function Footer() {
 
           <div className="footer-col">
             <h4 className="footer-col-title">Mobile Experience</h4>
-            <p style={{ fontSize: "13px", color: "#94A3B8", marginBottom: "14px", lineHeight: "1.6" }}>
+            <p className="footer-note">
               Shop live streams, direct chat with artisans, and track orders inside the WeaveHub iOS &amp; Android app.
             </p>
             <Link to="/download" className="btn btn-accent btn-sm">

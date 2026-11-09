@@ -1,12 +1,11 @@
 import React from "react";
 import { ProductCard } from "./ProductCard";
-import { AlertCircle, PackageSearch, RotateCw } from "lucide-react";
+import { EmptyState, ErrorState } from "./States";
 
 export function SkeletonCard() {
   return (
-    <div className="skeleton-card">
+    <div className="skeleton-card" aria-hidden="true">
       <div className="skeleton skeleton-img" />
-      <div className="skeleton skeleton-text" />
       <div className="skeleton skeleton-title" />
       <div className="skeleton skeleton-price" />
     </div>
@@ -20,11 +19,12 @@ export function ProductGrid({
   onRetry = null,
   emptyTitle = "No products found",
   emptyMessage = "Try searching for another artisan craft or selecting a different category.",
+  skeletonCount = 8,
 }) {
   if (loading) {
     return (
       <div className="product-grid" aria-label="Loading products">
-        {Array.from({ length: 8 }).map((_, idx) => (
+        {Array.from({ length: skeletonCount }).map((_, idx) => (
           <SkeletonCard key={idx} />
         ))}
       </div>
@@ -32,35 +32,11 @@ export function ProductGrid({
   }
 
   if (error) {
-    return (
-      <div className="state-box">
-        <div className="state-icon error">
-          <AlertCircle size={32} />
-        </div>
-        <h3 className="state-title">Unable to load products</h3>
-        <p className="state-desc">
-          {typeof error === "string" ? error : error?.message || "An unexpected error occurred while fetching from WeaveHub."}
-        </p>
-        {onRetry && (
-          <button type="button" onClick={onRetry} className="btn btn-primary">
-            <RotateCw size={16} />
-            <span>Try Again</span>
-          </button>
-        )}
-      </div>
-    );
+    return <ErrorState title="Unable to load products" error={error} onRetry={onRetry} />;
   }
 
-  if (!products || products.length === 0) {
-    return (
-      <div className="state-box">
-        <div className="state-icon empty">
-          <PackageSearch size={32} />
-        </div>
-        <h3 className="state-title">{emptyTitle}</h3>
-        <p className="state-desc">{emptyMessage}</p>
-      </div>
-    );
+  if (!products.length) {
+    return <EmptyState title={emptyTitle} message={emptyMessage} />;
   }
 
   return (

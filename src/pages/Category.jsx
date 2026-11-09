@@ -1,95 +1,77 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getProducts } from "../api/products";
-import { getCategoryById, getCategories } from "../api/categories";
-import { ProductGrid } from "../components/ProductGrid";
-import { updateSEO } from "../utils/seo";
 import { ChevronRight, ArrowLeft } from "lucide-react";
+import { TTL } from "../api/cache";
+import { getCategories, getCategoryById } from "../api/categories";
+import { getProductsPage } from "../api/products";
+import { ProductGrid } from "../components/ProductGrid";
+import { LoadMore } from "../components/States";
+import { usePagedList, useQuery } from "../hooks/useApi";
+import { updateSEO } from "../utils/seo";
+
+async function loadCategory(id, signal) {
+  try {
+    return await getCategoryById(id, { signal });
+  } catch (error) {
+    if (signal.aborted) throw error;
+    // Fall back to the list, which also accepts an old name-based link.
+    const all = await getCategories({ signal });
+    return all.find((c) => c.id === id || c.name.toLowerCase() === id.toLowerCase()) || null;
+  }
+}
 
 export function Category() {
   const { id } = useParams();
-  const [category, setCategory] = useState(null);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data: category } = useQuery(`category:${id}`, (signal) => loadCategory(id, signal), { ttl: TTL.long });
+  const list = usePagedList(`category-products:${id}`, ({ page, signal }) =>
+    getProductsPage({ page, categoryId: id, signal })
+  );
+
+  const categoryName = category?.name;
 
   useEffect(() => {
-    loadCategoryData();
-  }, [id]);
-
-  const loadCategoryData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // 1. Fetch category meta
-      let currentCat = null;
-      try {
-        currentCat = await getCategoryById(id);
-      } catch {
-        // Fallback: try finding in categories list
-        const all = await getCategories();
-        currentCat = all.find((c) => c.id === id || c.name.toLowerCase() === id.toLowerCase());
-      }
-
-      const catName = currentCat?.name || "Category";
-      setCategory(currentCat || { id, name: catName, description: "" });
-
-      // SEO
-      updateSEO({
-        title: `${catName} | WeaveHub`,
-        description: `Explore authentic handcrafted items in ${catName} on WeaveHub.`,
-      });
-
-      // 2. Fetch products in this category
-      const items = await getProducts({ categoryId: id });
-      setProducts(items);
-    } catch (err) {
-      console.error("Failed to load category products:", err);
-      setError(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (!categoryName) return;
+    updateSEO({
+      title: `${categoryName} | WeaveHub`,
+      description: `Explore authentic handcrafted items in ${categoryName} on WeaveHub.`,
+    });
+  }, [categoryName]);
 
   return (
-    <div style={{ paddingTop: "calc(var(--nav-h) + 24px)", paddingBottom: "64px" }}>
+    <div className="page">
       <div className="container">
-        {/* Breadcrumbs */}
         <nav className="breadcrumbs" aria-label="Breadcrumbs">
           <Link to="/">Home</Link>
-          <ChevronRight size={14} />
+          <ChevronRight size={14} aria-hidden="true" />
           <Link to="/categories">Categories</Link>
-          <ChevronRight size={14} />
-          <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>
-            {category?.name || "Category"}
-          </span>
+          <ChevronRight size={14} aria-hidden="true" />
+          <span className="breadcrumb-current">{categoryName || "Category"}</span>
         </nav>
 
-        <div style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "16px" }}>
+        <div className="page-head page-head--split">
           <div>
             <div className="section-badge">Collection</div>
-            <h1 className="section-title" style={{ marginBottom: "8px" }}>
-              {category?.name || "Collection"}
-            </h1>
-            <p style={{ color: "var(--text-muted)", fontSize: "15px" }}>
+            <h1 className="section-title">{categoryName || "Collection"}</h1>
+            <p className="page-head-sub">
               {category?.description || "Browse handcrafted items in this artisan category."}
             </p>
           </div>
 
           <Link to="/categories" className="btn btn-outline btn-sm">
-            <ArrowLeft size={14} />
+            <ArrowLeft size={14} aria-hidden="true" />
             <span>All Categories</span>
           </Link>
         </div>
 
         <ProductGrid
-          products={products}
-          loading={loading}
-          error={error}
-          onRetry={loadCategoryData}
-          emptyTitle={`No products found in ${category?.name || "this category"}`}
+          products={list.items}
+          loading={list.loading}
+          error={list.error}
+          onRetry={list.retry}
+          emptyTitle={`No products found in ${categoryName || "this category"}`}
           emptyMessage="Vendors are continually adding new artisan creations to this collection."
         />
+        <LoadMore list={list} />
       </div>
     </div>
   );

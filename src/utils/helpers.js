@@ -15,19 +15,54 @@ export function decimalToNumber(value, fallback = 0) {
   return Number(value ?? fallback) || fallback;
 }
 
+// Some media URLs come back from the API as http://. On an https site those are
+// blocked as mixed content, so every Cloudinary URL is upgraded.
+export function secureMediaUrl(url) {
+  return typeof url === "string"
+    ? url.replace(/^http:\/\/(res(?:-\d+)?\.cloudinary\.com)/i, "https://$1")
+    : url;
+}
+
 export function extractImageUri(value) {
   if (!value) return "";
-  if (typeof value === "string") return value;
-  return value.url || value.uri || value.path || "";
+  if (typeof value === "string") return secureMediaUrl(value);
+  return secureMediaUrl(value.url || value.uri || value.path || "");
 }
 
 const VIDEO_EXTENSIONS = ["mp4", "mov", "avi", "mkv", "webm", "m4v", "3gp"];
+const urlExtension = (url) => url.split("?")[0].split("#")[0].split(".").pop().toLowerCase();
 
 export function isVideoUrl(url) {
   if (!url || typeof url !== "string") return false;
-  const clean = url.split("?")[0].split("#")[0].toLowerCase();
-  const ext = clean.split(".").pop();
-  return VIDEO_EXTENSIONS.includes(ext);
+  return url.includes("/video/upload/") || VIDEO_EXTENSIONS.includes(urlExtension(url));
+}
+
+function cloudinaryVideoVariant(url, transformation, extension) {
+  const secure = secureMediaUrl(url);
+  if (!secure?.includes("res.cloudinary.com") || !secure.includes("/video/upload/")) return "";
+  return secure
+    .replace("/video/upload/", `/video/upload/${transformation}/`)
+    .replace(/\.[a-z0-9]+(\?.*)?$/i, `.${extension}$1`);
+}
+
+/** A still frame for a Cloudinary video, or "" when one can't be derived. */
+export function getVideoPoster(url) {
+  return cloudinaryVideoVariant(url, "so_0,f_jpg,w_800", "jpg");
+}
+
+/** H.264/AAC MP4 of a video: the format every phone can decode. */
+export function getCompatibleVideoUrl(url) {
+  return cloudinaryVideoVariant(url, "f_mp4,vc_h264,ac_aac,q_auto", "mp4");
+}
+
+/** The best URL to draw in an <img> for a media entry (never a video file). */
+export function getMediaStill(media) {
+  if (!media) return "";
+  const uri = extractImageUri(media);
+  if (!uri) return "";
+  const isVideo = media?.type === "video" || isVideoUrl(uri);
+  if (!isVideo) return uri;
+  return secureMediaUrl(media?.thumbnail) || getVideoPoster(uri);
 }
 
 export function normalizeVariant(item = {}) {
@@ -106,18 +141,16 @@ export function normalizeVariant(item = {}) {
 
   return {
     id: item?._id || item?.id || item?.variantId || item?.sku,
-    sku: item?.sku || item?.barcode || "Default",
     price: decimalToNumber(item?.price),
     discountedPrice:
       item?.discountedPrice !== undefined
         ? decimalToNumber(item?.discountedPrice)
         : null,
-    costPrice:
-      item?.costPrice !== undefined ? decimalToNumber(item?.costPrice) : null,
-    barcode: item?.barcode || "",
     isDefault: Boolean(item?.isDefault || item?.default),
     isActive: item?.isActive !== false && item?.status !== "inactive",
     attributes,
+    // List responses carry no stock, so stock is only judged once it's known.
+    stockKnown: Boolean(item?.inventory),
     inventory: {
       total,
       reserved,
@@ -127,9 +160,10 @@ export function normalizeVariant(item = {}) {
     },
     media,
     image:
-      extractImageUri(media?.[0]) ||
-      extractImageUri(item?.image) ||
-      extractImageUri(item?.photo),
+      getMediaStill(media?.find((m) => m?.type !== "video" && !isVideoUrl(extractImageUri(m)))) ||
+      getMediaStill(media?.[0]) ||
+      getMediaStill(item?.image) ||
+      getMediaStill(item?.photo),
     raw: item,
   };
 }
@@ -187,26 +221,32 @@ export function normalizeProduct(item = {}, categoriesList = []) {
     normalizedRawDefault;
 
   // Resolve media array and primary image
-  const productMedia = Array.isArray(productData?.media)
-    ? productData.media
-    : Array.isArray(item?.media)
-    ? item.media
-    : [];
+  const productMedia = (
+    Array.isArray(productData?.media)
+      ? productData.media
+      : Array.isArray(item?.media)
+      ? item.media
+      : []
+  ).filter((m) => m?.url && !m?.isDeleted);
 
-  const allMediaUrls = productMedia
-    .map((m) => extractImageUri(m))
-    .filter(Boolean);
-
-  const resolvedImage =
-    defaultVariant?.image ||
+  const firstPicture = productMedia.find(
+    (m) => m?.type !== "video" && !isVideoUrl(extractImageUri(m))
+  );
+  const mainImage =
     extractImageUri(productData?.mainImage) ||
     extractImageUri(item?.mainImage) ||
     extractImageUri(productData?.mainImg) ||
-    extractImageUri(item?.mainImg) ||
-    allMediaUrls[0] ||
-    extractImageUri(productData?.image) ||
-    extractImageUri(item?.image) ||
-    "/banner1.jpg";
+    extractImageUri(item?.mainImg);
+
+  // Cards always need a picture: mainImage can be null or a video file.
+  const resolvedImage =
+    defaultVariant?.image ||
+    (mainImage && !isVideoUrl(mainImage) ? mainImage : "") ||
+    getMediaStill(firstPicture) ||
+    (mainImage ? getVideoPoster(mainImage) : "") ||
+    getMediaStill(productMedia[0]) ||
+    getMediaStill(productData?.image) ||
+    getMediaStill(item?.image);
 
   // Categories
   const rawCategories = productData?.categories || item?.categories || [];
@@ -250,7 +290,8 @@ export function normalizeProduct(item = {}, categoriesList = []) {
     item?.stock ??
     0;
 
-  const isAvailable = stock > 0 && productData?.status !== "inactive";
+  const stockKnown = Boolean(defaultVariant?.stockKnown);
+  const isAvailable = (!stockKnown || stock > 0) && productData?.status !== "inactive";
 
   return {
     id:
@@ -270,23 +311,21 @@ export function normalizeProduct(item = {}, categoriesList = []) {
     category: categoryName,
     categoryId: rawCategoryId,
     image: resolvedImage,
-    media: allMediaUrls.length > 0 ? allMediaUrls : [resolvedImage],
     status: productData?.status || item?.status || "active",
     isFeatured: Boolean(productData?.isFeatured || item?.isFeatured),
     isPromoted: Boolean(productData?.isPromoted || item?.isPromoted),
     stock,
+    stockKnown,
     isAvailable,
     variants,
     defaultVariant,
     variantCount: variants.length || (normalizedRawDefault ? 1 : 0),
     storeId,
-    storeName: storeData?.name || item?.storeName || "WeaveHub Artisan Store",
-    storeLogo:
-      extractImageUri(storeData?.logo) || item?.storeLogo || "/icon.png",
-    storeBanner:
-      extractImageUri(storeData?.banner) || item?.storeBanner || "/banner2.jpg",
-    storeDescription:
-      storeData?.description || item?.storeDescription || "Independent artisan shop",
+    storeName: storeData?.name || item?.storeName || "",
+    storeLogo: extractImageUri(storeData?.logo) || extractImageUri(item?.storeLogo),
+    storeBanner: extractImageUri(storeData?.banner) || extractImageUri(item?.storeBanner),
+    storeTagLine: storeData?.tagLine || "",
+    storeDescription: storeData?.description || item?.storeDescription || "",
     raw: item,
   };
 }
@@ -303,4 +342,112 @@ export function normalizeCategory(item = {}) {
       extractImageUri(item?.photo) ||
       "",
   };
+}
+
+/** The store fields the site may show. Vendor contact details never leave this function. */
+export function normalizeStore(item = {}) {
+  return {
+    id: item?._id || item?.id,
+    name: item?.name || "WeaveHub Store",
+    tagLine: item?.tagLine && item.tagLine !== "Store" ? item.tagLine : "",
+    description: item?.description || "",
+    logo: extractImageUri(item?.logo),
+    banner: extractImageUri(item?.banner),
+    verified: item?.status === "approved" || item?.status === "active",
+    isPlatformStore: Boolean(item?.isPlatformStore),
+  };
+}
+
+function personName(user) {
+  if (!user || typeof user !== "object") return "";
+  return [user.firstName, user.lastName].filter(Boolean).join(" ").trim() || user.name || "";
+}
+
+export function normalizeReview(item = {}) {
+  return {
+    id: item?._id || item?.id,
+    author: personName(item?.user) || item?.userName || "Verified Shopper",
+    rating: Math.min(5, Math.max(0, Number(item?.rating || 0))),
+    text: item?.text || item?.body || item?.comment || item?.review || "",
+    createdAt: item?.createdAt || "",
+  };
+}
+
+export function normalizeComment(item = {}) {
+  const replies = Array.isArray(item?.replies)
+    ? item.replies
+    : Array.isArray(item?.children)
+    ? item.children
+    : [];
+  return {
+    id: item?._id || item?.id,
+    author: personName(item?.user) || item?.userName || "Verified Shopper",
+    text: item?.text || item?.body || item?.message || item?.comment || "",
+    createdAt: item?.createdAt || "",
+    replies: replies.map(normalizeComment),
+  };
+}
+
+/** What a product card shows: live price, strike-through price, discount %. */
+export function getProductPricing(product = {}) {
+  const variant = product?.defaultVariant || {};
+  const base = Number(variant.price || product.price || 0);
+  const discounted = Number(variant.discountedPrice ?? product.discountedPrice ?? 0);
+  const onSale = discounted > 0 && base > 0 && discounted < base;
+
+  return {
+    price: onSale ? discounted : base,
+    originalPrice: onSale ? base : null,
+    discountPct: onSale ? Math.round(((base - discounted) / base) * 100) : 0,
+  };
+}
+
+/** The price a shopper pays for a variant: a sale price only counts when it's real (0 means none). */
+export function getVariantPricing(variant, fallbackPrice = 0) {
+  const base = Number(variant?.price || fallbackPrice || 0);
+  const sale = Number(variant?.discountedPrice || 0);
+  const onSale = sale > 0 && base > 0 && sale < base;
+  return {
+    price: onSale ? sale : base,
+    originalPrice: onSale ? base : null,
+    discountPct: onSale ? Math.round(((base - sale) / base) * 100) : 0,
+  };
+}
+
+/** Gallery slides for a product/variant: [{ uri, isVideo, poster }]. */
+export function getProductSlides(product, variant) {
+  const raw = product?.raw?.product || product?.raw || {};
+  const media = (Array.isArray(raw.media) ? raw.media : []).filter((m) => m?.url && !m?.isDeleted);
+  const variantId = variant?.id || variant?.raw?._id;
+  const ownerOf = (m) =>
+    m?.variant && typeof m.variant === "object" ? m.variant._id || m.variant.id : m?.variant;
+  const toSlide = (m) => {
+    const uri = extractImageUri(m);
+    const isVideo = m?.type === "video" || isVideoUrl(uri);
+    return { uri, isVideo, poster: isVideo ? getMediaStill(m) : uri };
+  };
+
+  const forVariant = media.filter((m) => variantId && ownerOf(m) === variantId).map(toSlide);
+  const productLevel = media.filter((m) => !ownerOf(m)).map(toSlide);
+  const chosen = forVariant.some((s) => !s.isVideo)
+    ? [...forVariant, ...productLevel.filter((s) => s.isVideo)]
+    : [...forVariant, ...productLevel];
+
+  // List responses only carry mainImage, which may itself be a video.
+  if (!chosen.length) {
+    const main = extractImageUri(raw.mainImage);
+    if (main) chosen.push(toSlide({ url: main }));
+    else if (product?.image) chosen.push({ uri: product.image, isVideo: false, poster: product.image });
+  }
+
+  const seen = new Set();
+  const unique = chosen.filter((s) => !seen.has(s.uri) && seen.add(s.uri));
+  return [...unique.filter((s) => !s.isVideo), ...unique.filter((s) => s.isVideo)];
+}
+
+/** Fill in the category name for a product whose categories came back as bare ids. */
+export function withCategoryName(product, categoriesList = []) {
+  if (!product || product.category !== "General" || !product.categoryId) return product;
+  const name = getCategoryNameById(product.categoryId, categoriesList);
+  return name === "General" ? product : { ...product, category: name };
 }

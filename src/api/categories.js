@@ -1,29 +1,18 @@
 import { apiClient } from "./client";
 import { ENDPOINTS } from "./endpoints";
+import { unwrapPage } from "./products";
 import { normalizeCategory } from "../utils/helpers";
 
-function unwrapRecords(response) {
-  return (
-    response?.data?.data?.records ||
-    response?.data?.data ||
-    response?.data?.categories ||
-    response?.data?.records ||
-    response?.data?.items ||
-    (Array.isArray(response?.data) ? response.data : [])
-  );
+export async function getCategories({ signal } = {}) {
+  const response = await apiClient.get(ENDPOINTS.category.list, { signal });
+  const { records } = unwrapPage(response);
+  return records.filter((item) => item?.isActive !== false).map(normalizeCategory);
 }
 
-export async function getCategories() {
-  const response = await apiClient.get(ENDPOINTS.category.list);
-  const rawItems = unwrapRecords(response);
-
-  return Array.isArray(rawItems) ? rawItems.map(normalizeCategory) : [];
-}
-
-export async function getCategoryById(categoryId) {
+export async function getCategoryById(categoryId, { signal } = {}) {
   if (!categoryId) return null;
 
-  const response = await apiClient.get(ENDPOINTS.category.one(categoryId));
+  const response = await apiClient.get(ENDPOINTS.category.one(categoryId), { signal });
   const rawData = response?.data?.data || response?.data;
 
   return rawData ? normalizeCategory(rawData) : null;

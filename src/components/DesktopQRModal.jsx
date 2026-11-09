@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { X, Smartphone, ExternalLink } from "lucide-react";
 import {
@@ -27,7 +28,8 @@ export function DesktopQRModal({
 
   const openUrl = getWebProductOpenUrl(productId);
 
-  return (
+  // Portalled so an animated or transformed ancestor can't trap the fixed overlay.
+  return createPortal(
     <div
       className="modal-overlay"
       onClick={onClose}
@@ -75,7 +77,7 @@ export function DesktopQRModal({
             level="M"
             includeMargin={true}
             bgColor="#FFFFFF"
-            fgColor="#0F172A"
+            fgColor="#0E1B2C"
           />
         </div>
 
@@ -102,6 +104,7 @@ export function DesktopQRModal({
           </a>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

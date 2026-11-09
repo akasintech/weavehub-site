@@ -1,24 +1,30 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { SlidersHorizontal } from "lucide-react";
+import { getProductsPage } from "../api/products";
+import { Chip, ChipRow } from "../components/ChipRow";
 import { ProductGrid } from "../components/ProductGrid";
 import { SearchBar } from "../components/SearchBar";
-import { getProducts } from "../api/products";
-import { getCategories } from "../api/categories";
+import { LoadMore } from "../components/States";
+import { useCategories, useDebouncedValue, usePagedList } from "../hooks/useApi";
+import { getProductPricing } from "../utils/helpers";
 import { updateSEO } from "../utils/seo";
-import { SlidersHorizontal } from "lucide-react";
+
+const OBJECT_ID = /^[a-f\d]{24}$/i;
+const priceOf = (product) => getProductPricing(product).price;
 
 export function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialCategory = searchParams.get("category") || "all";
-  const initialQuery = searchParams.get("q") || "";
+  const selectedCategory = searchParams.get("category") || "all";
+  const queryParam = searchParams.get("q") || "";
 
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const [searchQuery, setSearchQuery] = useState(queryParam);
   const [sortBy, setSortBy] = useState("default");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const debouncedQuery = useDebouncedValue(searchQuery).trim();
+  const lastPushedQuery = useRef(queryParam);
+
+  const categories = useCategories();
+  const categoryList = categories.data || [];
 
   useEffect(() => {
     updateSEO({
@@ -26,133 +32,85 @@ export function Products() {
       description:
         "Browse artisan products, handcrafted goods, beauty, crafts and more from verified makers across WeaveHub.",
     });
-
-    loadCategories();
   }, []);
 
+  const updateParams = useCallback(
+    (mutate) => {
+      setSearchParams(
+        (current) => {
+          const next = new URLSearchParams(current);
+          mutate(next);
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
+
+  // A URL change we didn't make (Back, a link) overrides the search box.
   useEffect(() => {
-    loadProducts();
-  }, [categories]);
-
-  const loadCategories = async () => {
-    try {
-      const data = await getCategories();
-      setCategories(data);
-    } catch (err) {
-      console.warn("Categories fetch error:", err.message);
+    if (queryParam !== lastPushedQuery.current) {
+      lastPushedQuery.current = queryParam;
+      setSearchQuery(queryParam);
     }
-  };
+  }, [queryParam]);
 
-  const loadProducts = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getProducts({
-        categoriesList: categories,
-        limit: 50,
-      });
-      setProducts(data);
-    } catch (err) {
-      console.error("Products error:", err);
-      setError(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Keep the URL in step with the debounced search box.
+  useEffect(() => {
+    if (debouncedQuery === lastPushedQuery.current) return;
+    lastPushedQuery.current = debouncedQuery;
+    updateParams((next) => {
+      if (debouncedQuery) next.set("q", debouncedQuery);
+      else next.delete("q");
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery]);
+
+  // Old links may carry a category name. The server filter needs an id.
+  const categoryId =
+    selectedCategory === "all"
+      ? ""
+      : OBJECT_ID.test(selectedCategory)
+      ? selectedCategory
+      : categoryList.find((c) => c.name.toLowerCase() === selectedCategory.toLowerCase())?.id || "";
+  const waitingForCategory = selectedCategory !== "all" && !categoryId;
+
+  const list = usePagedList(
+    `products:${categoryId}:${debouncedQuery}`,
+    ({ page, signal }) => getProductsPage({ page, categoryId, name: debouncedQuery, signal }),
+    { enabled: !waitingForCategory }
+  );
 
   const handleCategorySelect = (catId) => {
-    setSelectedCategory(catId);
-    if (catId === "all") {
-      searchParams.delete("category");
-    } else {
-      searchParams.set("category", catId);
-    }
-    setSearchParams(searchParams);
+    updateParams((next) => {
+      if (catId === "all") next.delete("category");
+      else next.set("category", catId);
+    });
   };
 
-  const handleSearchSubmit = (val) => {
-    if (val.trim()) {
-      searchParams.set("q", val.trim());
-    } else {
-      searchParams.delete("q");
-    }
-    setSearchParams(searchParams);
-  };
+  const handleSearchSubmit = (val) => setSearchQuery(val);
 
-  // Filter & Sort — matches the WeaveHub mobile app's in-memory filtering approach
-  const processedProducts = useMemo(() => {
-    let list = [...products];
-
-    // Category filter
-    if (selectedCategory && selectedCategory !== "all") {
-      list = list.filter((p) => {
-        // Match by category ID
-        if (p.categoryId === selectedCategory) return true;
-        // Match by category name
-        if (p.category && p.category.toLowerCase() === selectedCategory.toLowerCase()) return true;
-        // Match in categories array
-        if (Array.isArray(p.categories)) {
-          return p.categories.some((c) => {
-            const cId = typeof c === "object" ? c._id || c.id : c;
-            const cName = typeof c === "object" ? c.name : String(c);
-            return (
-              cId === selectedCategory ||
-              cName?.toLowerCase() === selectedCategory?.toLowerCase()
-            );
-          });
-        }
-        return false;
-      });
-    }
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      list = list.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q) ||
-          p.storeName.toLowerCase().includes(q)
-      );
-    }
-
-    if (sortBy === "price-low") {
-      list.sort((a, b) => (a.discountedPrice || a.price) - (b.discountedPrice || b.price));
-    } else if (sortBy === "price-high") {
-      list.sort((a, b) => (b.discountedPrice || b.price) - (a.discountedPrice || a.price));
-    } else if (sortBy === "name") {
-      list.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    return list;
-  }, [products, selectedCategory, searchQuery, sortBy]);
+  const sortedProducts = useMemo(() => {
+    const items = [...list.items];
+    if (sortBy === "price-low") items.sort((a, b) => priceOf(a) - priceOf(b));
+    else if (sortBy === "price-high") items.sort((a, b) => priceOf(b) - priceOf(a));
+    else if (sortBy === "name") items.sort((a, b) => a.name.localeCompare(b.name));
+    return items;
+  }, [list.items, sortBy]);
 
   return (
-    <div style={{ paddingTop: "calc(var(--nav-h) + 24px)", paddingBottom: "64px" }}>
+    <div className="page">
       <div className="container">
-        {/* Header */}
-        <div style={{ marginBottom: "28px" }}>
+        <div className="page-head">
           <div className="section-badge">Storefront</div>
-          <h1 className="section-title" style={{ marginBottom: "8px" }}>
-            Artisan Marketplace
-          </h1>
-          <p style={{ color: "var(--text-muted)", fontSize: "15px" }}>
+          <h1 className="section-title">Artisan Marketplace</h1>
+          <p className="page-head-sub">
             Explore verified artisan items. Tap any product to view details and open directly in the WeaveHub app.
           </p>
         </div>
 
-        {/* Controls: Search & Sort */}
-        <div
-          className="products-controls"
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "16px",
-            flexWrap: "wrap",
-            marginBottom: "20px",
-          }}
-        >
+        <div className="products-controls">
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
@@ -160,21 +118,12 @@ export function Products() {
             placeholder="Search by keyword, product name, maker..."
           />
 
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <SlidersHorizontal size={16} style={{ color: "var(--text-light)" }} />
+          <div className="sort-wrap">
+            <SlidersHorizontal size={16} aria-hidden="true" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="form-select"
-              style={{
-                padding: "8px 32px 8px 14px",
-                borderRadius: "var(--radius-full)",
-                border: "1.5px solid var(--border)",
-                background: "var(--surface)",
-                fontSize: "13px",
-                fontWeight: 600,
-                color: "var(--secondary)",
-              }}
+              className="sort-select"
               aria-label="Sort products"
             >
               <option value="default">Sort: Default</option>
@@ -185,36 +134,32 @@ export function Products() {
           </div>
         </div>
 
-        {/* Category Pills */}
-        <div className="filter-pills" style={{ marginBottom: "32px" }}>
-          <button
-            type="button"
-            className={`filter-pill ${selectedCategory === "all" ? "active" : ""}`}
-            onClick={() => handleCategorySelect("all")}
-          >
-            All Products
-          </button>
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              className={`filter-pill ${selectedCategory === cat.id ? "active" : ""}`}
-              onClick={() => handleCategorySelect(cat.id)}
-            >
-              {cat.name}
-            </button>
-          ))}
+        <div className="chips-sticky chips-sticky--page">
+          <ChipRow loading={categories.loading} error={categories.error} onRetry={categories.refetch}>
+            <Chip active={selectedCategory === "all"} onClick={() => handleCategorySelect("all")}>
+              All Products
+            </Chip>
+            {categoryList.map((cat) => (
+              <Chip key={cat.id} active={selectedCategory === cat.id} onClick={() => handleCategorySelect(cat.id)}>
+                {cat.name}
+              </Chip>
+            ))}
+          </ChipRow>
         </div>
 
-        {/* Products Grid */}
+        {sortBy !== "default" && list.hasNext ? (
+          <p className="list-note">Sorted across the {list.items.length} products loaded so far.</p>
+        ) : null}
+
         <ProductGrid
-          products={processedProducts}
-          loading={loading}
-          error={error}
-          onRetry={loadProducts}
+          products={sortedProducts}
+          loading={list.loading || (waitingForCategory && categories.loading)}
+          error={list.error}
+          onRetry={list.retry}
           emptyTitle="No products match your criteria"
           emptyMessage="Try clearing your search query or selecting a different category."
         />
+        <LoadMore list={list} />
       </div>
     </div>
   );

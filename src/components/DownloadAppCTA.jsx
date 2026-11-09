@@ -80,7 +80,7 @@ export function DownloadAppCTA() {
                   size={120}
                   level="M"
                   bgColor="#FFFFFF"
-                  fgColor="#0F172A"
+                  fgColor="#0E1B2C"
                 />
               </div>
               <p style={{ color: "#94A3B8", fontSize: "12px", marginTop: "8px" }}>

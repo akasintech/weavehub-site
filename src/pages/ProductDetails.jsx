@@ -1,141 +1,150 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getProductById, getProductReviews, getProductComments, getProducts } from "../api/products";
-import { getCategories } from "../api/categories";
+import {
+  AlertCircle,
+  ArrowRight,
+  Check,
+  ChevronRight,
+  RotateCcw,
+  ShoppingBag,
+  Sparkles,
+  Store,
+  Tag,
+  Truck,
+} from "lucide-react";
+import { TTL } from "../api/cache";
+import {
+  getAlsoBoughtProducts,
+  getProductById,
+  getRelatedProducts,
+  peekProduct,
+  productKey,
+} from "../api/products";
+import { findStoreById } from "../api/stores";
+import { BuyOnAppButton } from "../components/BuyOnAppButton";
+import { ProductFeedback } from "../components/ProductFeedback";
 import { ProductImageGallery } from "../components/ProductImageGallery";
 import { ProductPrice } from "../components/ProductPrice";
 import { ProductVariants } from "../components/ProductVariants";
-import { BuyOnAppButton } from "../components/BuyOnAppButton";
-import { ProductCard } from "../components/ProductCard";
-import { updateSEO } from "../utils/seo";
+import { ProductRail } from "../components/Rails";
+import { MediaImage, Pill, Skeleton } from "../components/ui";
+import { useCategories, useQuery } from "../hooks/useApi";
 import {
-  Store,
-  Tag,
-  ShieldCheck,
-  Truck,
-  RotateCcw,
-  MessageSquare,
-  AlertCircle,
-  ChevronRight,
-  Sparkles,
-  ArrowRight,
-  ShoppingBag,
-} from "lucide-react";
+  formatCurrency,
+  getProductSlides,
+  getVariantPricing,
+  withCategoryName,
+} from "../utils/helpers";
+import { updateSEO } from "../utils/seo";
 
 export function ProductDetails() {
   const { id } = useParams();
-  const [product, setProduct] = useState(null);
-  const [selectedVariant, setSelectedVariant] = useState(null);
-  const [reviews, setReviews] = useState([]);
-  const [comments, setComments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [similarProducts, setSimilarProducts] = useState([]);
-  const [boughtTogetherProducts, setBoughtTogetherProducts] = useState([]);
+  return <ProductView key={id} id={id} />;
+}
 
-  useEffect(() => {
-    loadProduct();
-  }, [id]);
-
-  const loadProduct = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      let categories = [];
-      try {
-        categories = await getCategories();
-      } catch (err) {
-        console.warn("Categories fetch skipped in details:", err.message);
-      }
-
-      const item = await getProductById(id, categories);
-      setProduct(item);
-
-      // Default variant
-      const initialVariant =
-        item.defaultVariant || (item.variants?.length > 0 ? item.variants[0] : null);
-      setSelectedVariant(initialVariant);
-
-      // Dynamic SEO
-      updateSEO({
-        title: `${item.name} | WeaveHub`,
-        description:
-          item.description?.slice(0, 160) ||
-          `Buy ${item.name} handcrafted by ${item.storeName} on WeaveHub.`,
-        image: item.image,
-      });
-
-      // Attempt non-critical reviews and comments
-      getProductReviews(id).then((r) => setReviews(r || []));
-      getProductComments(id).then((c) => setComments(c || []));
-
-      // Fetch similar products (same category, exclude current)
-      if (item.categoryId) {
-        getProducts({ categoryId: item.categoryId, categoriesList: categories }).then((all) => {
-          const filtered = all.filter((p) => p.id !== id);
-          setSimilarProducts(filtered.slice(0, 4));
-          // Use a different slice for "frequently bought together"
-          setBoughtTogetherProducts(
-            filtered
-              .slice(4, 8)
-              .concat(filtered.slice(0, Math.max(0, 4 - Math.max(0, filtered.length - 4))))
-              .slice(0, 4)
-          );
-        }).catch(() => {});
-      } else {
-        // Fallback: fetch general products
-        getProducts({ categoriesList: categories }).then((all) => {
-          const filtered = all.filter((p) => p.id !== id);
-          setSimilarProducts(filtered.slice(0, 4));
-          setBoughtTogetherProducts(filtered.slice(4, 8));
-        }).catch(() => {});
-      }
-    } catch (err) {
-      console.error("Failed to load product details:", err);
-      setError(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVariantSelect = (variant) => {
-    setSelectedVariant(variant);
-  };
-
-  if (loading) {
-    return (
-      <div style={{ paddingTop: "calc(var(--nav-h) + 32px)", paddingBottom: "80px" }}>
-        <div className="container">
-          <div className="product-detail-layout">
-            <div className="skeleton" style={{ aspectRatio: "1 / 1", borderRadius: "20px" }} />
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div className="skeleton" style={{ height: "20px", width: "40%" }} />
-              <div className="skeleton" style={{ height: "36px", width: "85%" }} />
-              <div className="skeleton" style={{ height: "28px", width: "30%" }} />
-              <div className="skeleton" style={{ height: "120px", width: "100%" }} />
-              <div className="skeleton" style={{ height: "54px", width: "100%", borderRadius: "9999px" }} />
-            </div>
+function DetailsSkeleton() {
+  return (
+    <div className="page">
+      <div className="container">
+        <div className="product-detail-layout" aria-label="Loading product">
+          <div className="skeleton gallery-skeleton" />
+          <div className="product-info-panel">
+            <Skeleton width="40%" height={20} />
+            <Skeleton width="85%" height={34} />
+            <Skeleton width="30%" height={28} />
+            <Skeleton height={110} radius={14} />
+            <Skeleton height={54} radius={999} />
           </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  if (error || !product) {
+function StockPill({ soldOut, lowStock, available, known }) {
+  if (!known) return null;
+  if (soldOut) return <Pill tone="sale">Sold out</Pill>;
+  if (lowStock) return <Pill tone="gold">Low Stock: Only {available} left</Pill>;
+  return (
+    <Pill tone="brand" icon={Check}>
+      In Stock &amp; Ready to Ship
+    </Pill>
+  );
+}
+
+function ProductView({ id }) {
+  const { data: fetched, loading, error, refetch } = useQuery(
+    productKey(id),
+    (signal) => getProductById(id, { signal }),
+    { ttl: TTL.short }
+  );
+  const { data: categories = [] } = useCategories();
+  const [selectedVariantId, setSelectedVariantId] = useState(null);
+
+  const base = fetched || peekProduct(id);
+  const product = useMemo(() => withCategoryName(base, categories), [base, categories]);
+
+  const variants = useMemo(() => {
+    const all = product?.variants?.length
+      ? product.variants
+      : product?.defaultVariant
+      ? [product.defaultVariant]
+      : [];
+    const active = all.filter((v) => v.isActive !== false);
+    return active.length ? active : all;
+  }, [product]);
+
+  const activeVariant =
+    variants.find((v) => v.id === selectedVariantId) ||
+    variants.find((v) => v.isDefault) ||
+    variants[0] ||
+    null;
+
+  const slides = useMemo(
+    () => (product ? getProductSlides(product, activeVariant) : []),
+    [product, activeVariant]
+  );
+
+  const storeId = product?.storeId;
+  const storeQuery = useQuery(
+    storeId ? `store:${storeId}` : null,
+    (signal) => findStoreById(storeId, { signal }),
+    { enabled: Boolean(storeId), ttl: TTL.long }
+  );
+
+  const related = useQuery(`related:${id}`, (signal) => getRelatedProducts(id, { signal }));
+  const alsoBought = useQuery(`also-bought:${id}`, (signal) => getAlsoBoughtProducts(id, { signal }));
+
+  const productName = product?.name;
+  const seoImage = product?.image;
+  const seoDescription = product?.description;
+  const seoStore = product?.storeName;
+
+  useEffect(() => {
+    if (!productName) return;
+    updateSEO({
+      title: `${productName} | WeaveHub`,
+      description:
+        seoDescription?.slice(0, 160) || `Buy ${productName} handcrafted by ${seoStore} on WeaveHub.`,
+      image: seoImage || undefined,
+    });
+  }, [productName, seoDescription, seoStore, seoImage]);
+
+  if (!product) {
+    if (loading) return <DetailsSkeleton />;
     return (
-      <div style={{ paddingTop: "calc(var(--nav-h) + 48px)", paddingBottom: "80px" }}>
+      <div className="page">
         <div className="container">
-          <div className="state-box">
+          <div className="state-box" role="alert">
             <div className="state-icon error">
-              <AlertCircle size={32} />
+              <AlertCircle size={28} aria-hidden="true" />
             </div>
             <h2 className="state-title">Product not found</h2>
             <p className="state-desc">
               {error?.message || "We couldn't retrieve this product from the WeaveHub catalog."}
             </p>
-            <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
-              <button type="button" onClick={loadProduct} className="btn btn-outline">
+            <div className="state-actions">
+              <button type="button" onClick={refetch} className="btn btn-outline">
                 Try Again
               </button>
               <Link to="/products" className="btn btn-primary">
@@ -148,287 +157,179 @@ export function ProductDetails() {
     );
   }
 
-  // Active price & stock from selected variant if available
-  const activePrice = selectedVariant?.price ?? product.price;
-  const activeDiscountedPrice =
-    selectedVariant?.discountedPrice ?? product.discountedPrice;
-  const activeStock =
-    selectedVariant?.inventory?.available ?? product.stock ?? 0;
-  const isAvailable = activeStock > 0 && product.status !== "inactive";
+  const pricing = getVariantPricing(activeVariant, product.price);
+  const stockKnown = Boolean(activeVariant?.stockKnown);
+  const available = Number(activeVariant?.inventory?.available ?? 0);
+  const soldOut = stockKnown && available <= 0;
+  const lowStock =
+    stockKnown && !soldOut && available <= Number(activeVariant?.inventory?.lowStockThreshold ?? 5);
+  const isAvailable = !soldOut && product.status !== "inactive";
+  const detailsPending = !fetched && loading;
 
-  // Active media (variant media if present, otherwise product media)
-  const activeMedia =
-    selectedVariant?.media?.length > 0
-      ? selectedVariant.media
-      : product.media;
+  const store = storeQuery.data;
+  // The details response only names the store's id; the list item had its name.
+  const listItem = peekProduct(id);
+  const storeName = store?.name || product.storeName || listItem?.storeName || "WeaveHub Artisan Store";
+  const storeLogo = store?.logo || product.storeLogo || listItem?.storeLogo;
+  const storeDescription =
+    store?.tagLine || store?.description || product.storeDescription || "Independent artisan shop";
+  const hasCategory = product.categoryId && product.category !== "General";
+
+  const storeCard = (
+    <>
+      <div className="pd-store-logo">
+        {storeLogo ? <MediaImage src={storeLogo} alt="" iconSize={18} /> : <Store size={20} aria-hidden="true" />}
+      </div>
+      <div className="pd-store-text">
+        <span>Sold by</span>
+        <strong>{storeName}</strong>
+        <span>{storeDescription}</span>
+      </div>
+      {storeId ? <ChevronRight size={18} aria-hidden="true" /> : null}
+    </>
+  );
 
   return (
-    <div style={{ paddingTop: "calc(var(--nav-h) + 24px)", paddingBottom: "80px" }}>
+    <div className="page pd-page">
       <div className="container">
-        {/* Breadcrumbs */}
-        <nav className="breadcrumbs" aria-label="Breadcrumbs">
+        <nav className="breadcrumbs pd-breadcrumbs" aria-label="Breadcrumbs">
           <Link to="/">Home</Link>
-          <ChevronRight size={14} />
+          <ChevronRight size={14} aria-hidden="true" />
           <Link to="/products">Shop</Link>
-          <ChevronRight size={14} />
-          {product.categoryId ? (
+          <ChevronRight size={14} aria-hidden="true" />
+          {hasCategory ? (
             <>
               <Link to={`/categories/${product.categoryId}`}>{product.category}</Link>
-              <ChevronRight size={14} />
+              <ChevronRight size={14} aria-hidden="true" />
             </>
           ) : null}
-          <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>{product.name}</span>
+          <span className="breadcrumb-current">{product.name}</span>
         </nav>
 
-        {/* Main Details Layout */}
         <div className="product-detail-layout">
-          {/* Left Column: Gallery */}
-          <ProductImageGallery
-            media={activeMedia}
-            fallbackImage={product.image}
-            productName={product.name}
-          />
+          <div className="pd-gallery">
+            <ProductImageGallery slides={slides} productName={product.name} />
+          </div>
 
-          {/* Right Column: Information & Actions */}
           <div className="product-info-panel">
-            {/* Vendor / Store Pill */}
-            <div className="product-vendor-badge">
-              <Store size={14} style={{ color: "var(--primary-dark)" }} />
-              <span>Sold by <strong>{product.storeName}</strong></span>
-              <ShieldCheck size={14} style={{ color: "var(--primary-dark)" }} title="Verified Artisan Vendor" />
+            <div className="pd-pills">
+              {hasCategory ? (
+                <Link to={`/categories/${product.categoryId}`}>
+                  <Pill tone="brand" icon={Tag}>
+                    {product.category}
+                  </Pill>
+                </Link>
+              ) : null}
+              {detailsPending ? (
+                <Skeleton width={120} height={20} radius={999} />
+              ) : (
+                <StockPill soldOut={soldOut} lowStock={lowStock} available={available} known={stockKnown} />
+              )}
             </div>
 
             <h1 className="product-page-title">{product.name}</h1>
 
-            {/* Price */}
-            <ProductPrice
-              price={activePrice}
-              discountedPrice={activeDiscountedPrice}
-              size="lg"
-            />
+            <ProductPrice pricing={pricing} />
 
-            {/* Stock Status */}
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div
-                className={`stock-status ${
-                  !isAvailable ? "out-of-stock" : activeStock <= 3 ? "low-stock" : "in-stock"
-                }`}
-              >
-                <span className="stock-dot" />
-                <span>
-                  {!isAvailable
-                    ? "Sold out"
-                    : activeStock <= 3
-                    ? `Low Stock: Only ${activeStock} left`
-                    : "In Stock & Ready to Ship"}
-                </span>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-light)", fontSize: "13px" }}>
-                <Tag size={12} />
-                <span>{product.category}</span>
-              </div>
-            </div>
-
-            {/* Variants Selector */}
-            <ProductVariants
-              variants={product.variants}
-              selectedVariant={selectedVariant}
-              onSelectVariant={handleVariantSelect}
-            />
-
-            {/* CTA: Buy on WeaveHub */}
-            <div style={{ marginTop: "10px" }}>
-              <BuyOnAppButton
-                productId={product.id}
-                productName={product.name}
-                isAvailable={isAvailable}
+            {detailsPending ? (
+              <Skeleton height={42} radius={999} />
+            ) : (
+              <ProductVariants
+                variants={variants}
+                selectedVariant={activeVariant}
+                onSelectVariant={(variant) => setSelectedVariantId(variant.id)}
               />
-              <p
-                style={{
-                  fontSize: "12px",
-                  color: "var(--text-light)",
-                  textAlign: "center",
-                  marginTop: "8px",
-                }}
-              >
-                Safe in-app payment with buyer protection via WeaveHub mobile.
-              </p>
-            </div>
-
-            {/* Trust Badges */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "12px",
-                padding: "16px",
-                background: "var(--surface)",
-                borderRadius: "var(--radius)",
-                border: "1px solid var(--border)",
-              }}
-            >
-              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                <Truck size={20} style={{ color: "var(--primary-dark)" }} />
-                <div>
-                  <strong style={{ fontSize: "13px", display: "block" }}>Tracked Delivery</strong>
-                  <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Doorstep dispatch</span>
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                <RotateCcw size={20} style={{ color: "var(--secondary)" }} />
-                <div>
-                  <strong style={{ fontSize: "13px", display: "block" }}>Artisan Guarantee</strong>
-                  <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Direct from creator</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Description */}
-            <div style={{ borderTop: "1px solid var(--border)", paddingTop: "20px" }}>
-              <h3
-                style={{
-                  fontFamily: "'Outfit', sans-serif",
-                  fontSize: "16px",
-                  fontWeight: 700,
-                  marginBottom: "8px",
-                  color: "var(--secondary)",
-                }}
-              >
-                About this Creation
-              </h3>
-              <p style={{ color: "var(--text-muted)", fontSize: "14px", lineHeight: "1.7", whiteSpace: "pre-line" }}>
-                {product.description}
-              </p>
-            </div>
-
-            {/* Vendor Profile Card */}
-            <div
-              style={{
-                background: "var(--surface)",
-                borderRadius: "var(--radius-lg)",
-                border: "1px solid var(--border)",
-                padding: "18px",
-                display: "flex",
-                gap: "14px",
-                alignItems: "center",
-              }}
-            >
-              <img
-                src={product.storeLogo || "/icon.png"}
-                alt=""
-                style={{ width: "48px", height: "48px", borderRadius: "12px", objectFit: "cover" }}
-                onError={(e) => {
-                  e.currentTarget.src = "/icon.png";
-                }}
-              />
-              <div style={{ flex: 1 }}>
-                <strong style={{ fontFamily: "'Outfit', sans-serif", fontSize: "15px", display: "block", color: "var(--secondary)" }}>
-                  {product.storeName}
-                </strong>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
-                  {product.storeDescription || "Verified WeaveHub artisan vendor."}
-                </p>
-              </div>
-            </div>
-
-            {/* Customer Reviews / Comments */}
-            {(reviews.length > 0 || comments.length > 0) && (
-              <div style={{ borderTop: "1px solid var(--border)", paddingTop: "20px" }}>
-                <h3
-                  style={{
-                    fontFamily: "'Outfit', sans-serif",
-                    fontSize: "16px",
-                    fontWeight: 700,
-                    marginBottom: "12px",
-                    color: "var(--secondary)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  <MessageSquare size={16} />
-                  <span>Artisan Inquiries &amp; Reviews ({reviews.length + comments.length})</span>
-                </h3>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {[...reviews, ...comments].slice(0, 4).map((item, idx) => (
-                    <div
-                      key={item._id || item.id || idx}
-                      style={{
-                        padding: "12px",
-                        background: "var(--bg-alt)",
-                        borderRadius: "var(--radius-sm)",
-                        fontSize: "13px",
-                      }}
-                    >
-                      <div style={{ fontWeight: 600, color: "var(--secondary)", marginBottom: "4px" }}>
-                        {item.userName || item.user?.name || "Verified Shopper"}
-                      </div>
-                      <div style={{ color: "var(--text-muted)" }}>
-                        {item.comment || item.review || item.message || "Great handcrafted item!"}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             )}
+
+            <div className="pd-buy">
+              <div className="pd-buy-button">
+                <BuyOnAppButton productId={product.id} productName={product.name} isAvailable={isAvailable} />
+              </div>
+              <p className="pd-buy-note">Safe in-app payment with buyer protection via WeaveHub mobile.</p>
+            </div>
+
+            <div className="pd-trust">
+              <div>
+                <Truck size={20} aria-hidden="true" />
+                <div>
+                  <strong>Tracked Delivery</strong>
+                  <span>Doorstep dispatch</span>
+                </div>
+              </div>
+              <div>
+                <RotateCcw size={20} aria-hidden="true" />
+                <div>
+                  <strong>Artisan Guarantee</strong>
+                  <span>Direct from creator</span>
+                </div>
+              </div>
+            </div>
+
+            {storeId ? (
+              <Link to={`/stores/${storeId}`} state={store ? { store } : undefined} className="pd-store" aria-label={`Sold by ${storeName}`}>
+                {storeCard}
+              </Link>
+            ) : (
+              <div className="pd-store">{storeCard}</div>
+            )}
+
+            <div className="pd-about">
+              <h2 className="section-head-title">About this Creation</h2>
+              <p>{product.description}</p>
+            </div>
           </div>
         </div>
 
-        {/* ── FREQUENTLY BOUGHT TOGETHER ─────────────────────────────── */}
-        {boughtTogetherProducts.length > 0 && (
-          <div style={{ marginTop: "56px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                  <ShoppingBag size={18} style={{ color: "var(--primary-dark)" }} />
-                  <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--primary-dark)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Frequently Bought Together</span>
-                </div>
-                <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: "clamp(18px, 2.5vw, 24px)", fontWeight: 800, color: "var(--secondary)" }}>
-                  Customers also purchased
-                </h2>
-              </div>
-              <Link to="/products" className="btn btn-outline" style={{ fontSize: "13px" }}>
-                <span>View All</span>
-                <ArrowRight size={14} />
-              </Link>
-            </div>
-            <div className="recommendations-grid">
-              {boughtTogetherProducts.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-            </div>
-          </div>
-        )}
+        <ProductFeedback productId={id} />
 
-        {/* ── SIMILAR PRODUCTS ────────────────────────────────────────── */}
-        {similarProducts.length > 0 && (
-          <div style={{ marginTop: "56px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                  <Sparkles size={18} style={{ color: "var(--primary-dark)" }} />
-                  <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--primary-dark)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Similar Products</span>
-                </div>
-                <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: "clamp(18px, 2.5vw, 24px)", fontWeight: 800, color: "var(--secondary)" }}>
-                  You might also like
-                </h2>
-              </div>
-              {product.categoryId && (
-                <Link to={`/categories/${product.categoryId}`} className="btn btn-outline" style={{ fontSize: "13px" }}>
+        <div className="pd-rails">
+          <ProductRail
+            title="Customers also purchased"
+            subtitle="Frequently Bought Together"
+            icon={ShoppingBag}
+            products={alsoBought.data || []}
+            loading={alsoBought.loading}
+            error={alsoBought.error}
+            onRetry={alsoBought.refetch}
+            emptyText="No frequently bought items for this product yet."
+            action={
+              <Link to="/products" className="link-action">
+                View All
+              </Link>
+            }
+          />
+
+          <ProductRail
+            title="You might also like"
+            subtitle="Similar Products"
+            icon={Sparkles}
+            products={related.data || []}
+            loading={related.loading}
+            error={related.error}
+            onRetry={related.refetch}
+            emptyText="No similar products to show yet."
+            action={
+              hasCategory ? (
+                <Link to={`/categories/${product.categoryId}`} className="link-action">
                   <span>More in {product.category}</span>
-                  <ArrowRight size={14} />
+                  <ArrowRight size={14} aria-hidden="true" />
                 </Link>
-              )}
-            </div>
-            <div className="recommendations-grid">
-              {similarProducts.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-            </div>
-          </div>
-        )}
+              ) : null
+            }
+          />
+        </div>
+      </div>
+
+      <div className="pd-buybar">
+        <div className="pd-buybar-price">
+          {pricing.price > 0 ? (
+            <>
+              <strong className={pricing.discountPct ? "is-sale" : ""}>{formatCurrency(pricing.price)}</strong>
+              {pricing.originalPrice ? <s>{formatCurrency(pricing.originalPrice)}</s> : null}
+            </>
+          ) : null}
+        </div>
+        <BuyOnAppButton productId={product.id} productName={product.name} isAvailable={isAvailable} />
       </div>
     </div>
   );

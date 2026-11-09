@@ -1,77 +1,52 @@
 import React from "react";
-import { formatCurrency } from "../utils/helpers";
 
-export function ProductVariants({
-  variants = [],
-  selectedVariant = null,
-  onSelectVariant,
-}) {
-  if (!Array.isArray(variants) || variants.length <= 1) {
-    return null;
+function variantLabel(variant, index) {
+  return (
+    (variant?.attributes || [])
+      .map((a) => (typeof a === "object" ? a.value : a))
+      .filter(Boolean)
+      .join(" / ") || `Option ${index + 1}`
+  );
+}
+
+export function ProductVariants({ variants = [], selectedVariant = null, onSelectVariant }) {
+  if (variants.length > 1) {
+    return (
+      <div className="variants-container">
+        <div className="overline">Select Variant</div>
+        <div className="variant-options">
+          {variants.map((variant, index) => {
+            const selected = selectedVariant?.id === variant.id;
+            const soldOut = variant.stockKnown && Number(variant.inventory?.available ?? 0) <= 0;
+            return (
+              <button
+                key={variant.id || index}
+                type="button"
+                className={`variant-btn ${selected ? "selected" : ""} ${soldOut ? "sold-out" : ""}`}
+                aria-pressed={selected}
+                onClick={() => onSelectVariant(variant)}
+              >
+                {variantLabel(variant, index)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
   }
 
-  // Check if variants have distinct attributes
-  const hasNamedAttributes = variants.some(
-    (v) => Array.isArray(v.attributes) && v.attributes.length > 0
-  );
+  // One variant: nothing to choose, but its attributes are still worth showing.
+  const attributes = (variants[0]?.attributes || []).filter((a) => a?.name && a?.value);
+  if (!attributes.length) return null;
 
   return (
-    <div className="variants-container">
-      <div className="variant-title">
-        Select Variant {selectedVariant?.sku ? `(${selectedVariant.sku})` : ""}
-      </div>
-
-      <div className="variant-options">
-        {variants.map((variant) => {
-          const isSelected = selectedVariant?.id === variant.id;
-          const available = variant?.inventory?.available ?? 0;
-          const isAvailable = available > 0 && variant.isActive;
-
-          // Build readable label: attributes like "Color: Red, Size: M" or SKU
-          let label = "";
-          if (Array.isArray(variant.attributes) && variant.attributes.length > 0) {
-            label = variant.attributes
-              .map((a) => (a.name ? `${a.name}: ${a.value}` : a.value))
-              .join(" / ");
-          }
-          if (!label) {
-            label = variant.sku || `Variant ${variant.id.slice(-4)}`;
-          }
-
-          return (
-            <button
-              key={variant.id}
-              type="button"
-              disabled={!isAvailable}
-              className={`variant-btn ${isSelected ? "selected" : ""}`}
-              onClick={() => onSelectVariant(variant)}
-              title={
-                !isAvailable
-                  ? "This variant is currently out of stock"
-                  : `${label} - ${formatCurrency(variant.discountedPrice || variant.price)}`
-              }
-            >
-              <span>{label}</span>
-              {variant.price ? (
-                <span
-                  style={{
-                    marginLeft: "6px",
-                    fontSize: "12px",
-                    color: isSelected ? "var(--primary-dark)" : "var(--text-light)",
-                  }}
-                >
-                  ({formatCurrency(variant.discountedPrice || variant.price)})
-                </span>
-              ) : null}
-              {!isAvailable && (
-                <span style={{ marginLeft: "6px", fontSize: "11px", color: "var(--danger)" }}>
-                  (Sold out)
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    <dl className="variant-attrs">
+      {attributes.map((attribute) => (
+        <div key={attribute.name}>
+          <dt>{attribute.name}</dt>
+          <dd>{attribute.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }

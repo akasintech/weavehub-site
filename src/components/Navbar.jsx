@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Search, Menu, X, Smartphone } from "lucide-react";
+import { Search, X, Smartphone } from "lucide-react";
+import { Wordmark } from "./ui";
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -39,7 +40,7 @@ export function Navbar() {
         <div className="nav-container">
           <Link to="/" className="nav-logo" onClick={closeMenu} aria-label="WeaveHub Home">
             <img src="/icon.png" alt="WeaveHub logo" className="nav-logo-img" />
-            <span className="nav-logo-text">WeaveHub</span>
+            <Wordmark />
           </Link>
 
           <ul className="nav-links" role="list">
@@ -66,6 +67,14 @@ export function Navbar() {
                 className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}
               >
                 Categories
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to="/stores"
+                className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}
+              >
+                Stores
               </NavLink>
             </li>
             <li>
@@ -216,6 +225,14 @@ export function Navbar() {
             style={{ fontSize: "16px", padding: "10px 14px" }}
           >
             Categories
+          </NavLink>
+          <NavLink
+            to="/stores"
+            className="nav-link"
+            onClick={closeMenu}
+            style={{ fontSize: "16px", padding: "10px 14px" }}
+          >
+            Stores
           </NavLink>
           <NavLink
             to="/download"

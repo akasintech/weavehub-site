@@ -1,9 +1,20 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Sparkles } from "lucide-react";
+
+const TILE_TONES = ["brand", "gold", "violet", "sale", "ink"];
+
+function toneFor(name = "") {
+  let hash = 0;
+  for (let i = 0; i < name.length; i += 1) hash = (hash + name.charCodeAt(i)) % 997;
+  return TILE_TONES[hash % TILE_TONES.length];
+}
 
 export function CategoryCard({ category }) {
+  const [imageFailed, setImageFailed] = useState(false);
   if (!category) return null;
+
+  const showImage = category.image && !imageFailed;
+  const initial = (category.name || "W").trim().charAt(0).toUpperCase();
 
   return (
     <Link
@@ -11,26 +22,20 @@ export function CategoryCard({ category }) {
       className="category-card"
       aria-label={`Explore category ${category.name}`}
     >
-      <div className="category-card-icon">
-        {category.image ? (
-          <img
-            src={category.image}
-            alt=""
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
-          />
+      <div className={`category-card-icon tile--${toneFor(category.name)}`}>
+        {showImage ? (
+          <img src={category.image} alt="" loading="lazy" onError={() => setImageFailed(true)} />
         ) : (
-          <Sparkles size={24} />
+          <span aria-hidden="true">{initial}</span>
         )}
       </div>
       <h3 className="category-card-title">{category.name}</h3>
-      <p style={{ fontSize: "12px", color: "var(--text-muted)", textAlign: "center", lineHeight: "1.4" }}>
-        {category.description || "Discover artisan crafts"}
-      </p>
-      <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--primary-dark)", marginTop: "auto" }}>
-        Browse →
-      </span>
+      <p className="category-card-desc">{category.description || "Discover artisan crafts"}</p>
+      <span className="category-card-link">Browse →</span>
     </Link>
   );
+}
+
+export function CategoryCardSkeleton() {
+  return <div className="skeleton category-card-skeleton" aria-hidden="true" />;
 }

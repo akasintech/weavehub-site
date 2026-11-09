@@ -1,109 +1,90 @@
-import React from "react";
+import React, { memo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ProductPrice } from "./ProductPrice";
-import { Store, Tag } from "lucide-react";
+import { Heart, Store } from "lucide-react";
+import { prefetchProduct, rememberProduct } from "../api/products";
+import { formatCurrency, getProductPricing } from "../utils/helpers";
+import { isMobileDevice, openProductInApp } from "../utils/deepLinks";
+import { DesktopQRModal } from "./DesktopQRModal";
+import { MediaImage, Pill } from "./ui";
 
-export function ProductCard({ product }) {
-  if (!product) return null;
+/** Warm the details page while the pointer is still down. */
+export function warmProduct(product) {
+  rememberProduct(product);
+  prefetchProduct(product.id);
+}
 
-  const {
-    id,
-    name,
-    price,
-    discountedPrice,
-    image,
-    category,
-    storeName,
-    storeLogo,
-    isAvailable,
-    stock,
-  } = product;
+// Saving needs an account, and accounts live in the app.
+function SaveInAppButton({ productId, productName }) {
+  const [showQR, setShowQR] = useState(false);
 
-  const hasDiscount =
-    discountedPrice != null &&
-    Number(discountedPrice) > 0 &&
-    Number(discountedPrice) < Number(price);
-
-  const percentOff =
-    hasDiscount && price
-      ? Math.round(((price - discountedPrice) / price) * 100)
-      : 0;
+  const handleClick = () => {
+    if (isMobileDevice()) openProductInApp(productId);
+    else setShowQR(true);
+  };
 
   return (
-    <article className="product-card">
-      <Link
-        to={`/products/${id}`}
-        aria-label={`View details for ${name}`}
-        style={{ display: "flex", flexDirection: "column", height: "100%" }}
+    <>
+      <button
+        type="button"
+        className="pcard-heart"
+        onClick={handleClick}
+        aria-label={`Save ${productName} in the WeaveHub app`}
       >
-        <div className="product-card-img-wrap">
-          <img
-            src={image || "/banner1.jpg"}
-            alt={name}
-            className="product-card-img"
-            loading="lazy"
-            onError={(e) => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src = "/banner1.jpg";
-            }}
-          />
-
-          <div className="product-card-badge-wrap">
-            {hasDiscount && (
-              <span className="badge-discount">{percentOff}% OFF</span>
-            )}
-            {!isAvailable && (
-              <span className="badge-out-of-stock">Out of Stock</span>
-            )}
-            {isAvailable && stock > 0 && stock <= 3 && (
-              <span className="badge-out-of-stock" style={{ background: "var(--warning)" }}>
-                Only {stock} left
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="product-card-body">
-          <div className="product-card-vendor">
-            {storeLogo ? (
-              <img
-                src={storeLogo}
-                alt=""
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-            ) : (
-              <Store size={14} />
-            )}
-            <span>{storeName || "WeaveHub Artisan"}</span>
-          </div>
-
-          <h3 className="product-card-title">{name}</h3>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-            <Tag size={12} style={{ color: "var(--text-light)" }} />
-            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-              {category || "Craft"}
-            </span>
-          </div>
-
-          <div className="product-card-footer">
-            <ProductPrice price={price} discountedPrice={discountedPrice} />
-            <span
-              style={{
-                fontSize: "12px",
-                fontWeight: 700,
-                color: "var(--secondary)",
-                display: "inline-flex",
-                alignItems: "center",
-              }}
-            >
-              View →
-            </span>
-          </div>
-        </div>
-      </Link>
-    </article>
+        <Heart size={17} aria-hidden="true" />
+      </button>
+      <DesktopQRModal
+        isOpen={showQR}
+        onClose={() => setShowQR(false)}
+        productId={productId}
+        productName={productName}
+      />
+    </>
   );
 }
+
+export const ProductCard = memo(function ProductCard({ product }) {
+  if (!product) return null;
+
+  const { id, name, image, storeName, storeLogo } = product;
+  const { price, originalPrice, discountPct } = getProductPricing(product);
+  const soldOut = product.stockKnown && Number(product.stock) <= 0;
+
+  return (
+    <article className="pcard">
+      <Link
+        to={`/products/${id}`}
+        className="pcard-link"
+        aria-label={`View details for ${name}`}
+        onPointerDown={() => warmProduct(product)}
+      >
+        <div className="pcard-media">
+          <MediaImage src={image} alt={name} className="pcard-img" />
+          {discountPct > 0 ? (
+            <Pill tone="sale" className="pcard-discount">
+              -{discountPct}%
+            </Pill>
+          ) : null}
+          {soldOut ? <div className="pcard-soldout">SOLD OUT</div> : null}
+        </div>
+
+        <div className="pcard-body">
+          {storeName ? (
+            <div className="pcard-store">
+              {storeLogo ? <img src={storeLogo} alt="" loading="lazy" /> : <Store size={11} aria-hidden="true" />}
+              <span>{storeName}</span>
+            </div>
+          ) : null}
+          <h3 className="pcard-name">{name}</h3>
+          {price > 0 ? (
+            <div className="pcard-price">
+              <span className={discountPct ? "is-sale" : ""}>{formatCurrency(price)}</span>
+              {originalPrice ? <s>{formatCurrency(originalPrice)}</s> : null}
+            </div>
+          ) : null}
+        </div>
+      </Link>
+
+      <SaveInAppButton productId={id} productName={name} />
+    </article>
+  );
+});

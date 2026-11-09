@@ -1,21 +1,78 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { ProductGrid } from "../components/ProductGrid";
-import { CategoryCard } from "../components/CategoryCard";
-import { DownloadAppCTA } from "../components/DownloadAppCTA";
-import { getProducts } from "../api/products";
-import { getCategories } from "../api/categories";
-import { updateSEO } from "../utils/seo";
-import { IOS_STORE_URL, ANDROID_STORE_URL } from "../utils/deepLinks";
-import { ArrowRight, Sparkles, Smartphone, ShieldCheck, HeartHandshake } from "lucide-react";
+import React, { useEffect, useRef } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import {
+  ArrowRight,
+  Flame,
+  HeartHandshake,
+  Search as SearchIcon,
+  ShieldCheck,
+  SlidersHorizontal,
+  Smartphone,
+  Sparkles,
+  Tag,
+} from "lucide-react";
+import { TTL } from "../api/cache";
+import { getDeals, getFeaturedProducts, getProductsPage, getTrendingPage } from "../api/products";
+import { getStoresPage } from "../api/stores";
 import { FadeUp, FadeIn, SlideLeft, SlideRight, ScaleIn, StaggerParent, StaggerItem, PageTransition } from "../components/Animate";
+import { CategoryCard, CategoryCardSkeleton } from "../components/CategoryCard";
+import { Chip, ChipDivider, ChipRow } from "../components/ChipRow";
+import { DownloadAppCTA } from "../components/DownloadAppCTA";
+import { FeaturedCarousel } from "../components/FeaturedCarousel";
+import { ProductGrid } from "../components/ProductGrid";
+import { ProductRail, StoreRail } from "../components/Rails";
+import { LoadMore, ErrorState } from "../components/States";
+import { useCategories, usePagedList, useQuery } from "../hooks/useApi";
+import { updateSEO } from "../utils/seo";
+
+const TAB_ALL = "all";
+const TAB_TRENDING = "trending";
+const TAB_DEALS = "deals";
+
+function TrustItems({ hidden = false }) {
+  return (
+    <span className="trust-group" aria-hidden={hidden || undefined}>
+      <span className="trust-item"><Sparkles className="icon" /> Authentic Handmade Crafts</span>
+      <span className="trust-sep" aria-hidden="true">•</span>
+      <span className="trust-item"><Smartphone className="icon" /> Live Stream Shopping</span>
+      <span className="trust-sep" aria-hidden="true">•</span>
+      <span className="trust-item"><HeartHandshake className="icon" /> Direct Artisan Messaging</span>
+      <span className="trust-sep" aria-hidden="true">•</span>
+      <span className="trust-item"><ShieldCheck className="icon" /> Verified Vendor Storefronts</span>
+      <span className="trust-sep" aria-hidden="true">•</span>
+      <span className="trust-item"><Sparkles className="icon" /> Curated Collections</span>
+      <span className="trust-sep" aria-hidden="true">•</span>
+      <span className="trust-item"><Smartphone className="icon" /> In-App Wallet Checkout</span>
+      <span className="trust-sep" aria-hidden="true">•</span>
+    </span>
+  );
+}
 
 export function Home() {
-  const [featuredProducts, setFeaturedProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
-  const [loadingCategories, setLoadingCategories] = useState(true);
-  const [productsError, setProductsError] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || TAB_ALL;
+  const chipsAnchorRef = useRef(null);
+
+  const isTrendingTab = activeTab === TAB_TRENDING;
+  const isDealsTab = activeTab === TAB_DEALS;
+  const categoryId = activeTab !== TAB_ALL && !isTrendingTab && !isDealsTab ? activeTab : "";
+
+  const categories = useCategories();
+  const categoryList = categories.data || [];
+  const activeCategory = categoryList.find((c) => c.id === categoryId) || null;
+
+  const featured = useQuery("featured", (signal) => getFeaturedProducts({ signal }));
+  const stores = useQuery(
+    "stores:home",
+    (signal) => getStoresPage({ page: 1, limit: 12, signal }).then((result) => result.items),
+    { ttl: TTL.long }
+  );
+  const deals = useQuery("deals", (signal) => getDeals({ signal }));
+  const trending = usePagedList("trending", ({ page, signal }) => getTrendingPage({ page, signal }));
+  const feed = usePagedList(
+    categoryId ? `category-products:${categoryId}` : "feed:all",
+    ({ page, signal }) => getProductsPage({ page, categoryId, signal })
+  );
 
   useEffect(() => {
     updateSEO({
@@ -23,244 +80,277 @@ export function Home() {
       description:
         "Discover authentic handmade products, support local artisans, watch live seller streams, and shop on WeaveHub.",
     });
-
-    loadData();
   }, []);
 
-  const loadData = async () => {
-    setLoadingProducts(true);
-    setProductsError(null);
+  const selectTab = (tab) => {
+    setSearchParams(tab === TAB_ALL ? {} : { tab }, { replace: true });
 
-    // Fetch categories first to provide category names to normalizer
-    let fetchedCategories = [];
-    try {
-      setLoadingCategories(true);
-      fetchedCategories = await getCategories();
-      setCategories(fetchedCategories);
-    } catch (err) {
-      console.warn("Could not fetch categories:", err.message);
-    } finally {
-      setLoadingCategories(false);
-    }
-
-    // Fetch featured / recent products
-    try {
-      const items = await getProducts({ categoriesList: fetchedCategories });
-      setFeaturedProducts(items.slice(0, 8));
-    } catch (err) {
-      console.warn("Could not fetch featured products:", err.message);
-      setProductsError(err);
-    } finally {
-      setLoadingProducts(false);
-    }
+    // If the chips are stuck to the top, jump back to the start of the new list.
+    const anchor = chipsAnchorRef.current;
+    if (!anchor) return;
+    const navHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--nav-h"), 10) || 0;
+    const top = anchor.getBoundingClientRect().top + window.scrollY - navHeight;
+    if (window.scrollY > top) window.scrollTo({ top, behavior: "instant" });
   };
+
+  const dealItems = deals.data || [];
+
+  const grid = isTrendingTab
+    ? { products: trending.items, loading: trending.loading, error: trending.error, retry: trending.retry, paged: trending }
+    : isDealsTab
+    ? { products: dealItems, loading: deals.loading, error: deals.error, retry: deals.refetch, paged: null }
+    : { products: feed.items, loading: feed.loading, error: feed.error, retry: feed.retry, paged: feed };
+
+  const gridTitle = isTrendingTab
+    ? "Trending now"
+    : isDealsTab
+    ? "Best deals"
+    : activeCategory
+    ? activeCategory.name
+    : categoryId
+    ? "Collection"
+    : "Fresh on WeaveHub";
+
+  const gridCount = grid.paged?.hasNext ? grid.paged.total : grid.products.length;
 
   return (
     <PageTransition>
       {/* ── HERO ──────────────────────────────────────────────────────── */}
       <section className="hero" aria-labelledby="hero-heading">
-        <div className="hero-bg-orbs" aria-hidden="true">
-          <div className="orb orb-1" />
-          <div className="orb orb-2" />
-        </div>
+        <div className="container home-top">
+          <div className="home-intro">
+            <div className="hero-badge" aria-label="Status">
+              <span className="badge-dot" aria-hidden="true" />
+              Now available on iOS &amp; Android
+            </div>
 
-        <div className="container hero-content">
-          <SlideLeft className="hero-text">
-            <FadeIn delay={0.05}>
-              <div className="hero-badge" aria-label="Status">
-                <span className="badge-dot" aria-hidden="true" />
-                Now available on iOS &amp; Android
+            <h1 id="hero-heading" className="hero-title">
+              The Marketplace<br />
+              <span className="gradient-text">Built for Artisans</span><br />
+              &amp; Craft Lovers
+            </h1>
+
+            <p className="hero-subtitle">
+              Discover unique handmade creations, support talented independent makers,
+              watch live stream showcases, and buy directly inside the WeaveHub app.
+            </p>
+
+            <div className="hero-actions">
+              <Link to="/products" className="btn btn-primary btn-lg">
+                <span>Explore Products</span>
+                <ArrowRight size={18} aria-hidden="true" />
+              </Link>
+              <Link to="/download" className="btn btn-outline btn-lg">
+                <Smartphone size={18} aria-hidden="true" />
+                <span>Get the App</span>
+              </Link>
+            </div>
+
+            <div className="hero-stats">
+              <div className="stat-item">
+                <span className="stat-number">10K+</span>
+                <span className="stat-label">Products</span>
               </div>
-            </FadeIn>
-
-            <FadeUp delay={0.1}>
-              <h1 id="hero-heading" className="hero-title">
-                The Marketplace<br />
-                <span className="gradient-text">Built for Artisans</span><br />
-                &amp; Craft Lovers
-              </h1>
-            </FadeUp>
-
-            <FadeUp delay={0.2}>
-              <p className="hero-subtitle">
-                Discover unique handmade creations, support talented independent makers,
-                watch live stream showcases, and buy directly inside the WeaveHub app.
-              </p>
-            </FadeUp>
-
-            <FadeUp delay={0.3}>
-              <div className="hero-actions">
-                <Link to="/products" className="btn btn-primary btn-lg">
-                  <span>Explore Products</span>
-                  <ArrowRight size={18} />
-                </Link>
-                <Link to="/download" className="btn btn-outline btn-lg">
-                  <Smartphone size={18} />
-                  <span>Get the App</span>
-                </Link>
+              <div className="stat-divider" aria-hidden="true" />
+              <div className="stat-item">
+                <span className="stat-number">500+</span>
+                <span className="stat-label">Vendors</span>
               </div>
-            </FadeUp>
-
-            <FadeUp delay={0.4}>
-              <div className="hero-stats">
-                <div className="stat-item">
-                  <span className="stat-number">10K+</span>
-                  <span className="stat-label">Products</span>
-                </div>
-                <div className="stat-divider" aria-hidden="true" />
-                <div className="stat-item">
-                  <span className="stat-number">500+</span>
-                  <span className="stat-label">Vendors</span>
-                </div>
-                <div className="stat-divider" aria-hidden="true" />
-                <div className="stat-item">
-                  <span className="stat-number">50+</span>
-                  <span className="stat-label">Categories</span>
-                </div>
-              </div>
-            </FadeUp>
-          </SlideLeft>
-
-          <SlideRight delay={0.15}>
-            <div className="hero-visual">
-              <div className="phone-mockup" aria-hidden="true">
-                <div className="phone-frame">
-                  <div className="phone-screen">
-                    <div className="phone-notch" />
-                    <div className="mock-screen">
-                      <div className="mock-header">
-                        <img src="/icon.png" alt="" className="mock-logo" />
-                        <span className="mock-brand">WeaveHub</span>
-                      </div>
-                      <div className="mock-banner">
-                        <img src="/banner1.jpg" alt="WeaveHub artisan products" className="mock-banner-img" />
-                      </div>
-                      <div className="mock-chips">
-                        <div className="chip chip-active">Featured</div>
-                        <div className="chip">Handmade</div>
-                        <div className="chip">Braids</div>
-                        <div className="chip">Art</div>
-                      </div>
-                      <div className="mock-grid">
-                        <div className="mock-card"><div className="mock-card-img" style={{ background: "#e2e8f0" }} /><div className="mock-card-body"><div className="mock-card-title" /><div className="mock-card-price" /></div></div>
-                        <div className="mock-card"><div className="mock-card-img" style={{ background: "#cbd5e1" }} /><div className="mock-card-body"><div className="mock-card-title" /><div className="mock-card-price" /></div></div>
-                        <div className="mock-card"><div className="mock-card-img" style={{ background: "#94a3b8" }} /><div className="mock-card-body"><div className="mock-card-title" /><div className="mock-card-price" /></div></div>
-                        <div className="mock-card"><div className="mock-card-img" style={{ background: "#64748b" }} /><div className="mock-card-body"><div className="mock-card-title" /><div className="mock-card-price" /></div></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div className="stat-divider" aria-hidden="true" />
+              <div className="stat-item">
+                <span className="stat-number">50+</span>
+                <span className="stat-label">Categories</span>
               </div>
             </div>
-          </SlideRight>
-        </div>
+          </div>
 
-        <div className="hero-wave" aria-hidden="true">
-          <svg viewBox="0 0 1440 100" preserveAspectRatio="none">
-            <path d="M0,60 C360,100 1080,0 1440,60 L1440,100 L0,100 Z" fill="var(--bg)" />
-          </svg>
+          <div className="home-showcase">
+            <Link to="/search" className="search-pill" aria-label="Search WeaveHub">
+              <SearchIcon size={19} aria-hidden="true" />
+              <span>Search Ankara, Kente, beads…</span>
+              <span className="search-pill-action" aria-hidden="true">
+                <SlidersHorizontal size={16} />
+              </span>
+            </Link>
+            <FeaturedCarousel
+              products={featured.data || []}
+              loading={featured.loading}
+              error={featured.error}
+              onRetry={featured.refetch}
+            />
+          </div>
         </div>
       </section>
 
       {/* ── TRUST BAR ─────────────────────────────────────────────────── */}
-      <FadeIn>
-        <div className="trust-bar" aria-label="Supported features">
-          <div className="trust-marquee">
-            <div className="trust-track">
-              <span className="trust-item"><Sparkles className="icon" /> Authentic Handmade Crafts</span>
-              <span className="trust-sep" aria-hidden="true">•</span>
-              <span className="trust-item"><Smartphone className="icon" /> Live Stream Shopping</span>
-              <span className="trust-sep" aria-hidden="true">•</span>
-              <span className="trust-item"><HeartHandshake className="icon" /> Direct Artisan Messaging</span>
-              <span className="trust-sep" aria-hidden="true">•</span>
-              <span className="trust-item"><ShieldCheck className="icon" /> Verified Vendor Storefronts</span>
-              <span className="trust-sep" aria-hidden="true">•</span>
-              <span className="trust-item"><Sparkles className="icon" /> Curated Collections</span>
-              <span className="trust-sep" aria-hidden="true">•</span>
-              <span className="trust-item"><Smartphone className="icon" /> In-App Wallet Checkout</span>
-            </div>
+      <div className="trust-bar" aria-label="Supported features">
+        <div className="trust-marquee">
+          <div className="trust-track">
+            <TrustItems />
+            <TrustItems hidden />
           </div>
         </div>
-      </FadeIn>
+      </div>
 
-      {/* ── TRENDING PRODUCTS ─────────────────────────────────────────── */}
-      <section className="section" aria-labelledby="featured-products-heading">
+      {/* ── SHOP ──────────────────────────────────────────────────────── */}
+      <div className="home-shop">
+        <div ref={chipsAnchorRef} />
+        <div className="chips-sticky">
+          <div className="container">
+            <ChipRow loading={categories.loading} error={categories.error} onRetry={categories.refetch}>
+              <Chip active={activeTab === TAB_ALL} onClick={() => selectTab(TAB_ALL)}>
+                All
+              </Chip>
+              <Chip active={isTrendingTab} icon={Flame} onClick={() => selectTab(TAB_TRENDING)}>
+                Trending
+              </Chip>
+              {dealItems.length ? (
+                <Chip active={isDealsTab} icon={Tag} onClick={() => selectTab(TAB_DEALS)}>
+                  Deals
+                </Chip>
+              ) : null}
+              {categoryList.length ? <ChipDivider /> : null}
+              {categoryList.map((category) => (
+                <Chip key={category.id} active={categoryId === category.id} onClick={() => selectTab(category.id)}>
+                  {category.name}
+                </Chip>
+              ))}
+            </ChipRow>
+          </div>
+        </div>
+
+        <div className="container">
+          {activeTab === TAB_ALL ? (
+            <div className="home-rails">
+              <ProductRail
+                ranked
+                title="Trending Products"
+                subtitle="The hottest handcrafted picks right now — loved by shoppers across WeaveHub."
+                icon={Flame}
+                products={trending.items.slice(0, 10)}
+                loading={trending.loading}
+                error={trending.error}
+                onRetry={trending.retry}
+                emptyText="Nothing is trending just yet. Check back soon."
+                action={
+                  <button type="button" className="link-action" onClick={() => selectTab(TAB_TRENDING)}>
+                    See all
+                  </button>
+                }
+              />
+
+              <StoreRail
+                stores={stores.data || []}
+                loading={stores.loading}
+                error={stores.error}
+                onRetry={stores.refetch}
+                action={
+                  <Link to="/stores" className="link-action">
+                    See all
+                  </Link>
+                }
+              />
+
+              <ProductRail
+                title="Deals worth weaving in"
+                subtitle="Biggest markdowns right now"
+                icon={Tag}
+                products={dealItems.slice(0, 10)}
+                loading={deals.loading}
+                error={deals.error}
+                onRetry={deals.refetch}
+                emptyText="No markdowns running right now. Check back soon."
+                errorTitle="Unable to load deals"
+                action={
+                  dealItems.length ? (
+                    <button type="button" className="link-action" onClick={() => selectTab(TAB_DEALS)}>
+                      See all
+                    </button>
+                  ) : null
+                }
+              />
+            </div>
+          ) : null}
+
+          <section aria-labelledby="featured-products-heading">
+            <div className="grid-head">
+              <h2 id="featured-products-heading" className="grid-title">
+                {gridTitle}
+              </h2>
+              {grid.products.length ? (
+                <span className="caption">
+                  {gridCount} item{gridCount === 1 ? "" : "s"}
+                </span>
+              ) : null}
+            </div>
+
+            <ProductGrid
+              products={grid.products}
+              loading={grid.loading}
+              error={grid.error}
+              onRetry={grid.retry}
+              emptyTitle={activeCategory ? `Nothing in ${activeCategory.name} yet` : "No products currently listed"}
+              emptyMessage="New artisan collections are being added daily. Check back soon or download the app."
+            />
+            {grid.paged ? <LoadMore list={grid.paged} /> : null}
+
+            {activeTab === TAB_ALL && grid.products.length > 0 ? (
+              <div className="center-action">
+                <Link to="/products" className="btn btn-primary btn-lg">
+                  <span>See All Products</span>
+                  <ArrowRight size={18} aria-hidden="true" />
+                </Link>
+              </div>
+            ) : null}
+          </section>
+        </div>
+      </div>
+
+      {/* ── POPULAR CATEGORIES ────────────────────────────────────────── */}
+      <section className="section section--alt" aria-labelledby="categories-heading">
         <div className="container">
           <FadeUp>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "32px", flexWrap: "wrap", gap: "16px" }}>
-              <div>
-                <div className="section-badge">🔥 Trending</div>
-                <h2 id="featured-products-heading" className="section-title" style={{ marginBottom: "6px" }}>
-                  Trending Products
-                </h2>
-                <p style={{ color: "var(--text-muted)", fontSize: "15px" }}>
-                  The hottest handcrafted picks right now — loved by shoppers across WeaveHub.
-                </p>
-              </div>
-              <Link to="/products" className="btn btn-outline">
-                <span>See All Products</span>
-                <ArrowRight size={16} />
-              </Link>
+            <div className="section-header">
+              <div className="section-badge">Categories</div>
+              <h2 id="categories-heading" className="section-title">
+                Explore by <span className="gradient-text">Category</span>
+              </h2>
+              <p className="section-subtitle">
+                Find exactly what you love across our vibrant artisan specialties.
+              </p>
             </div>
           </FadeUp>
 
-          <ProductGrid
-            products={featuredProducts}
-            loading={loadingProducts}
-            error={productsError}
-            onRetry={loadData}
-            emptyTitle="No products currently listed"
-            emptyMessage="New artisan collections are being added daily. Check back soon or download the app."
-          />
+          {categories.loading ? (
+            <div className="category-grid" aria-label="Loading categories">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <CategoryCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : categories.error ? (
+            <ErrorState compact title="Unable to load categories" error={categories.error} onRetry={categories.refetch} />
+          ) : categoryList.length ? (
+            <>
+              <StaggerParent className="category-grid" stagger={0.07}>
+                {categoryList.slice(0, 8).map((cat) => (
+                  <StaggerItem key={cat.id}>
+                    <CategoryCard category={cat} />
+                  </StaggerItem>
+                ))}
+              </StaggerParent>
 
-          {!loadingProducts && featuredProducts.length > 0 && (
-            <FadeUp delay={0.1}>
-              <div style={{ textAlign: "center", marginTop: "36px" }}>
-                <Link to="/products" className="btn btn-primary btn-lg">
-                  <span>See All Products</span>
-                  <ArrowRight size={18} />
+              <div className="center-action">
+                <Link to="/categories" className="btn btn-outline">
+                  <span>View All Categories</span>
+                  <ArrowRight size={16} aria-hidden="true" />
                 </Link>
               </div>
-            </FadeUp>
+            </>
+          ) : (
+            <p className="list-note list-note--center">Categories will appear here once registered on the marketplace.</p>
           )}
         </div>
       </section>
-
-      {/* ── POPULAR CATEGORIES ────────────────────────────────────────── */}
-      {categories.length > 0 && (
-        <section className="section section--alt" aria-labelledby="categories-heading">
-          <div className="container">
-            <FadeUp>
-              <div className="section-header">
-                <div className="section-badge">Categories</div>
-                <h2 id="categories-heading" className="section-title">
-                  Explore by <span className="gradient-text">Category</span>
-                </h2>
-                <p className="section-subtitle">
-                  Find exactly what you love across our vibrant artisan specialties.
-                </p>
-              </div>
-            </FadeUp>
-
-            <StaggerParent className="category-grid" stagger={0.07}>
-              {categories.slice(0, 8).map((cat) => (
-                <StaggerItem key={cat.id}>
-                  <CategoryCard category={cat} />
-                </StaggerItem>
-              ))}
-            </StaggerParent>
-
-            <FadeUp delay={0.2}>
-              <div style={{ textAlign: "center", marginTop: "32px" }}>
-                <Link to="/categories" className="btn btn-outline">
-                  <span>View All Categories</span>
-                  <ArrowRight size={16} />
-                </Link>
-              </div>
-            </FadeUp>
-          </div>
-        </section>
-      )}
 
       {/* ── HOW IT WORKS ──────────────────────────────────────────────── */}
       <section className="section" id="how-it-works" aria-labelledby="how-heading">
@@ -320,7 +410,7 @@ export function Home() {
                 <p className="vendor-subtitle">
                   WeaveHub gives artisans and sellers every tool to run a thriving storefront without technical complexity.
                 </p>
-                <StaggerParent className="vendor-features" stagger={0.12} style={{ listStyle: "none", padding: 0 }}>
+                <StaggerParent className="vendor-features" stagger={0.12}>
                   <StaggerItem>
                     <div className="vendor-feature-item">
                       <div className="vfi-icon" aria-hidden="true"><Sparkles className="icon" /></div>
@@ -370,8 +460,8 @@ export function Home() {
                     <div className="dash-bar" style={{ height: "75%" }} />
                   </div>
                   <div className="dash-orders">
-                    <div className="dash-order-row"><div className="dash-order-dot" style={{ background: "#1E9E52" }} /><span>Woven Basket Set</span><span className="dash-order-status">Shipped</span></div>
-                    <div className="dash-order-row"><div className="dash-order-dot" style={{ background: "#1F3A5F" }} /><span>Handmade Clay Pot</span><span className="dash-order-status pending">Processing</span></div>
+                    <div className="dash-order-row"><div className="dash-order-dot dash-order-dot--brand" /><span>Woven Basket Set</span><span className="dash-order-status">Shipped</span></div>
+                    <div className="dash-order-row"><div className="dash-order-dot dash-order-dot--ink" /><span>Handmade Clay Pot</span><span className="dash-order-status pending">Processing</span></div>
                   </div>
                 </div>
               </div>
@@ -387,5 +477,3 @@ export function Home() {
     </PageTransition>
   );
 }
-
-
