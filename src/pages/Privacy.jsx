@@ -157,13 +157,13 @@ export function Privacy() {
               <div className="pp-section-body">
                 <p>If you have any questions or concerns regarding this Privacy Policy:</p>
                 <div className="contact-info-grid">
-                  <a href="mailto:privacy@weavehub.io" className="contact-info-card">
+                  <a href="mailto:support@weavehubmarket.com.ng" className="contact-info-card">
                     <Mail size={16} />
-                    <span>privacy@weavehub.io</span>
+                    <span>support@weavehubmarket.com.ng</span>
                   </a>
-                  <a href="mailto:hello@weavehub.io" className="contact-info-card">
+                  <a href="mailto:support@weavehubmarket.com.ng" className="contact-info-card">
                     <Mail size={16} />
-                    <span>hello@weavehub.io</span>
+                    <span>support@weavehubmarket.com.ng</span>
                   </a>
                 </div>
               </div>

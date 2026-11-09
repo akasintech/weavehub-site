@@ -39,7 +39,7 @@ export function Footer() {
                 <Instagram size={18} />
               </a>
               <a
-                href="mailto:hello@weavehub.io"
+                href="mailto:support@weavehubmarket.com.ng"
                 className="social-link"
                 aria-label="Email WeaveHub Support"
               >
@@ -98,7 +98,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="mailto:privacy@weavehub.io" className="footer-link">
+                <a href="mailto:support@weavehubmarket.com.ng" className="footer-link">
                   Privacy Inquiries
                 </a>
               </li>

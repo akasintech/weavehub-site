@@ -59,8 +59,8 @@ export function Contact() {
               </div>
               <h3 className="channel-title">Email Inquiries</h3>
               <p className="channel-desc">Our dedicated support desk replies within 24 business hours.</p>
-              <a href="mailto:hello@weavehub.io" className="channel-action">
-                hello@weavehub.io →
+              <a href="mailto:support@weavehubmarket.com.ng" className="channel-action">
+                support@weavehubmarket.com.ng →
               </a>
             </div>
 
@@ -105,7 +105,7 @@ export function Contact() {
                   </div>
                   <div>
                     <strong>Vendor Onboarding</strong>
-                    <p>vendors@weavehub.io</p>
+                    <p>support@weavehubmarket.com.ng</p>
                   </div>
                 </div>
 
@@ -115,7 +115,7 @@ export function Contact() {
                   </div>
                   <div>
                     <strong>Customer Protection</strong>
-                    <p>support@weavehub.io</p>
+                    <p>support@weavehubmarket.com.ng</p>
                   </div>
                 </div>
               </div>
