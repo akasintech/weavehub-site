@@ -12,7 +12,7 @@ import {
   Tag,
 } from "lucide-react";
 import { TTL } from "../api/cache";
-import { getDeals, getFeaturedProducts, getProductsPage, getTrendingPage } from "../api/products";
+import { getAllFeaturedProducts, getDeals, getFeaturedProducts, getProductsPage, getTrendingPage } from "../api/products";
 import { getStoresPage } from "../api/stores";
 import { FadeUp, FadeIn, SlideLeft, SlideRight, ScaleIn, StaggerParent, StaggerItem, PageTransition } from "../components/Animate";
 import { CategoryCard, CategoryCardSkeleton } from "../components/CategoryCard";
@@ -62,6 +62,8 @@ export function Home() {
   const activeCategory = categoryList.find((c) => c.id === categoryId) || null;
 
   const featured = useQuery("featured", (signal) => getFeaturedProducts({ signal }));
+  const featuredAll = useQuery("featured:all", () => getAllFeaturedProducts());
+  const featuredItems = featuredAll.data || [];
   const stores = useQuery(
     "stores:home",
     (signal) => getStoresPage({ page: 1, limit: 12, signal }).then((result) => result.items),
@@ -222,6 +224,26 @@ export function Home() {
         <div className="container">
           {activeTab === TAB_ALL ? (
             <div className="home-rails">
+              {featuredAll.loading || featuredAll.error || featuredItems.length ? (
+                <ProductRail
+                  title="Featured picks"
+                  subtitle="Standout pieces hand-picked by the WeaveHub team."
+                  icon={Sparkles}
+                  products={featuredItems.slice(0, 10)}
+                  loading={featuredAll.loading && !featuredItems.length}
+                  error={featuredItems.length ? null : featuredAll.error}
+                  onRetry={featuredAll.refetch}
+                  errorTitle="Unable to load featured picks"
+                  action={
+                    featuredItems.length ? (
+                      <Link to="/featured" className="link-action">
+                        See all
+                      </Link>
+                    ) : null
+                  }
+                />
+              ) : null}
+
               <ProductRail
                 ranked
                 title="Trending Products"

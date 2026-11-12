@@ -7,6 +7,7 @@ import { Footer } from "./components/Footer";
 import { Home } from "./pages/Home";
 import { Products } from "./pages/Products";
 import { ProductDetails } from "./pages/ProductDetails";
+import { Featured } from "./pages/Featured";
 import { Categories } from "./pages/Categories";
 import { Category } from "./pages/Category";
 import { Search } from "./pages/Search";
@@ -75,6 +76,7 @@ export function App() {
           <Route path="/" element={<Home />} />
           <Route path="/products" element={<Products />} />
           <Route path="/products/:id" element={<ProductDetails />} />
+          <Route path="/featured" element={<Featured />} />
           <Route path="/categories" element={<Categories />} />
           <Route path="/categories/:id" element={<Category />} />
           <Route path="/search" element={<Search />} />

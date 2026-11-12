@@ -63,6 +63,14 @@ export function Navbar() {
             </li>
             <li>
               <NavLink
+                to="/featured"
+                className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}
+              >
+                Featured
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
                 to="/categories"
                 className={({ isActive }) => `nav-link ${isActive ? "nav-link--active" : ""}`}
               >
@@ -217,6 +225,14 @@ export function Navbar() {
             style={{ fontSize: "16px", padding: "10px 14px" }}
           >
             Shop Products
+          </NavLink>
+          <NavLink
+            to="/featured"
+            className="nav-link"
+            onClick={closeMenu}
+            style={{ fontSize: "16px", padding: "10px 14px" }}
+          >
+            Featured Picks
           </NavLink>
           <NavLink
             to="/categories"

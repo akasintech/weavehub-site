@@ -6,8 +6,8 @@ export const apiClient = axios.create({
   headers: {
     Accept: "application/json",
   },
-  // Generous because the API host can take a while to wake from idle.
-  timeout: 30000,
+  // The API host sleeps when idle and can take 40s+ to answer the first request.
+  timeout: 60000,
 });
 
 function friendlyMessage(error) {

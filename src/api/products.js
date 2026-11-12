@@ -116,8 +116,41 @@ export async function getAlsoBoughtProducts(productId, { limit = 12, signal } = 
   return toProductPage(response, [], (p) => isShoppable(p) && p.id !== productId).items;
 }
 
-/** Hero picks: same rule as the app. Featured or promoted first, otherwise the newest. */
+const FEATURED_SCAN_LIMIT = 50;
+const FEATURED_SCAN_PAGES = 10;
+
+// The API ignores ?isFeatured=true, so finding every featured product means
+// walking the catalogue (up to 500 products). One shared, cached walk serves
+// the home rail, the hero and the Featured page.
+async function scanFeatured() {
+  const first = await getProductsPage({ page: 1, limit: FEATURED_SCAN_LIMIT });
+  const lastPage = Math.min(first.pagination.totalPages || 1, FEATURED_SCAN_PAGES);
+  // The remaining pages are fetched together, not one after another.
+  const rest = await Promise.all(
+    Array.from({ length: lastPage - 1 }, (_, i) => getProductsPage({ page: i + 2, limit: FEATURED_SCAN_LIMIT }))
+  );
+
+  const seen = new Set();
+  return [first, ...rest]
+    .flatMap((page) => page.items)
+    .filter((p) => {
+      const active = !p.status || p.status === "active";
+      if (!p.isFeatured || !active || seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+}
+
+/** Every product an admin has featured, newest first. */
+export function getAllFeaturedProducts() {
+  return cachedRequest("featured:scan", scanFeatured, { ttl: TTL.short });
+}
+
+/** Hero picks: admin-featured products first; if there are none, promoted or the newest. */
 export async function getFeaturedProducts({ signal } = {}) {
+  const featuredByAdmin = (await getAllFeaturedProducts()).filter((p) => p.image);
+  if (featuredByAdmin.length) return featuredByAdmin.slice(0, 6);
+
   const { items } = await getProductsPage({ page: 1, limit: PAGE_SIZE, signal });
   const featured = items.filter(
     (p) =>
