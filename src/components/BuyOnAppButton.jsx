@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { openProductInApp, isMobileDevice } from "../utils/deepLinks";
+import { openApp, isMobileDevice } from "../utils/deepLinks";
 import { DesktopQRModal } from "./DesktopQRModal";
 import { Smartphone, QrCode } from "lucide-react";
 
@@ -13,11 +13,10 @@ export function BuyOnAppButton({
   const handleClick = () => {
     if (!isAvailable) return;
 
-    if (isMobileDevice()) {
-      openProductInApp(productId);
-    } else {
-      setShowQRModal(true);
-    }
+    // Android: opens the product in WeaveHub, or the Play Store if it isn't installed.
+    // A computer (or an iPhone, until the iOS app exists) gets the QR code.
+    const result = openApp({ productId });
+    if (result === "desktop" || result === "ios-unavailable") setShowQRModal(true);
   };
 
   return (

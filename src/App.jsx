@@ -8,6 +8,8 @@ import { Home } from "./pages/Home";
 import { Products } from "./pages/Products";
 import { ProductDetails } from "./pages/ProductDetails";
 import { Featured } from "./pages/Featured";
+import { AppRedirect } from "./pages/AppRedirect";
+import { getDevicePlatform, openApp } from "./utils/deepLinks";
 import { Categories } from "./pages/Categories";
 import { Category } from "./pages/Category";
 import { Search } from "./pages/Search";
@@ -66,10 +68,32 @@ function ScrollManager() {
   return null;
 }
 
+// On Android, every "Download" / "Get the app" link opens WeaveHub when it's
+// installed and the Play Store when it isn't, instead of the download page.
+function AndroidAppLinks() {
+  useEffect(() => {
+    if (getDevicePlatform() !== "android") return undefined;
+    const onClick = (event) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey) return;
+      const link = event.target.closest?.("a[href]");
+      if (!link) return;
+      const url = new URL(link.href, window.location.href);
+      if (url.origin !== window.location.origin || url.pathname !== "/download") return;
+      event.preventDefault();
+      event.stopPropagation();
+      openApp();
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, []);
+  return null;
+}
+
 export function App() {
   return (
     <>
       <ScrollManager />
+      <AndroidAppLinks />
       <Navbar />
       <main>
         <Routes>
@@ -83,6 +107,7 @@ export function App() {
           <Route path="/stores" element={<Stores />} />
           <Route path="/stores/:id" element={<StorePage />} />
           <Route path="/download" element={<Download />} />
+          <Route path="/app" element={<AppRedirect />} />
           <Route path="/open/product/:id" element={<OpenProduct />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/contact" element={<Contact />} />

@@ -123,7 +123,7 @@ export function Home() {
           <div className="home-intro">
             <div className="hero-badge" aria-label="Status">
               <span className="badge-dot" aria-hidden="true" />
-              Now available on iOS &amp; Android
+              Now available on Android
             </div>
 
             <h1 id="hero-heading" className="hero-title">

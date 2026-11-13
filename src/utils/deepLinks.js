@@ -1,10 +1,11 @@
 const APP_SCHEME = import.meta.env.VITE_APP_SCHEME || "weavehub";
+export const ANDROID_PACKAGE = "com.akasintech.weavehub";
 const ANDROID_STORE_URL =
   import.meta.env.VITE_ANDROID_STORE_URL ||
-  "https://play.google.com/store/apps/details?id=com.akasintech.weavehub";
-const IOS_STORE_URL =
-  import.meta.env.VITE_IOS_STORE_URL ||
-  "https://apps.apple.com/app/weavehub/id9b155524";
+  `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`;
+const IOS_STORE_URL = import.meta.env.VITE_IOS_STORE_URL || "";
+// Only a real App Store link (".../id<digits>") counts; the app isn't on iOS yet.
+export const IOS_AVAILABLE = /apps\.apple\.com\/.+\/id\d+(\?|$)/.test(IOS_STORE_URL);
 const WEBSITE_URL =
   import.meta.env.VITE_WEBSITE_URL ||
   (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
@@ -32,63 +33,72 @@ export function isMobileDevice() {
   return platform === "android" || platform === "ios";
 }
 
+const appPath = (productId) => (productId ? `product/${encodeURIComponent(productId)}` : "");
+
 export function getAppProductDeepLink(productId) {
-  if (!productId) return `${APP_SCHEME}://`;
-  return `${APP_SCHEME}://product/${productId}`;
+  return `${APP_SCHEME}://${appPath(productId)}`;
 }
 
+/**
+ * Android's intent link: Chrome (and most Android browsers) opens WeaveHub if
+ * it's installed, and goes straight to its Play Store page if it isn't.
+ */
+export function getAndroidIntentUrl(productId) {
+  const fallback = encodeURIComponent(ANDROID_STORE_URL);
+  return `intent://${appPath(productId)}#Intent;scheme=${APP_SCHEME};package=${ANDROID_PACKAGE};S.browser_fallback_url=${fallback};end`;
+}
+
+/** What QR codes encode: a website page that opens the app or the store on the phone that scans it. */
+export function getAppOpenUrl(productId) {
+  return productId ? `${WEBSITE_URL}/app?product=${encodeURIComponent(productId)}` : `${WEBSITE_URL}/app`;
+}
+
+/** Kept for links already shared; it opens the same way as getAppOpenUrl. */
 export function getWebProductOpenUrl(productId) {
-  const cleanId = encodeURIComponent(productId || "");
-  return `${WEBSITE_URL}/open/product/${cleanId}`;
+  return `${WEBSITE_URL}/open/product/${encodeURIComponent(productId || "")}`;
 }
 
 export function getStoreUrl(platform = getDevicePlatform()) {
-  if (platform === "ios") return IOS_STORE_URL;
+  if (platform === "ios") return IOS_AVAILABLE ? IOS_STORE_URL : "";
   return ANDROID_STORE_URL;
 }
 
-export function openProductInApp(productId, options = {}) {
-  const platform = getDevicePlatform();
-  const { onDesktopTrigger } = options;
-
-  if (platform === "desktop") {
-    if (typeof onDesktopTrigger === "function") {
-      onDesktopTrigger();
-    }
-    return { isDesktop: true, handled: false };
-  }
-
-  const deepLink = getAppProductDeepLink(productId);
-  const fallbackStore = getStoreUrl(platform);
-
-  const startTime = Date.now();
-  let hasLeftPage = false;
-
-  const handleVisibilityChange = () => {
-    if (document.hidden || document.webkitHidden) {
-      hasLeftPage = true;
-    }
+function openIosApp(productId) {
+  // iOS has no install-or-store link, so try the app and fall back to the store.
+  let left = false;
+  const onHide = () => {
+    if (document.hidden) left = true;
   };
-
-  document.addEventListener("visibilitychange", handleVisibilityChange);
-  document.addEventListener("webkitvisibilitychange", handleVisibilityChange);
-
-  // Attempt custom URI scheme launch
-  window.location.href = deepLink;
-
-  // Fallback timer: if the app is not installed, the page stays visible and we redirect to store
+  document.addEventListener("visibilitychange", onHide);
+  window.location.href = getAppProductDeepLink(productId);
   setTimeout(() => {
-    document.removeEventListener("visibilitychange", handleVisibilityChange);
-    document.removeEventListener("webkitvisibilitychange", handleVisibilityChange);
-
-    const elapsed = Date.now() - startTime;
-    // If the user hasn't switched away to the mobile app within 2.5s, route to store
-    if (!hasLeftPage && elapsed < 3500) {
-      window.location.href = fallbackStore;
-    }
+    document.removeEventListener("visibilitychange", onHide);
+    if (!left) window.location.href = IOS_STORE_URL;
   }, 2500);
+}
 
-  return { isDesktop: false, handled: true, deepLink };
+/**
+ * Opens WeaveHub (on a product when given) or its store page.
+ * Returns what happened: "android" | "ios" | "ios-unavailable" | "desktop".
+ */
+export function openApp({ productId } = {}) {
+  const platform = getDevicePlatform();
+  if (platform === "android") {
+    window.location.href = getAndroidIntentUrl(productId);
+    return "android";
+  }
+  if (platform === "ios") {
+    if (!IOS_AVAILABLE) return "ios-unavailable";
+    openIosApp(productId);
+    return "ios";
+  }
+  return "desktop";
+}
+
+export function openProductInApp(productId, options = {}) {
+  const result = openApp({ productId });
+  if (result === "desktop") options.onDesktopTrigger?.();
+  return { isDesktop: result === "desktop", handled: result === "android" || result === "ios", result };
 }
 
 export { APP_SCHEME, ANDROID_STORE_URL, IOS_STORE_URL, WEBSITE_URL };

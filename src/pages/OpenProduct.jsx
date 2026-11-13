@@ -6,11 +6,10 @@ import {
   getDevicePlatform,
   openProductInApp,
   getWebProductOpenUrl,
-  ANDROID_STORE_URL,
-  IOS_STORE_URL,
 } from "../utils/deepLinks";
+import { StoreButtons } from "../components/StoreButtons";
 import { updateSEO } from "../utils/seo";
-import { Smartphone, ExternalLink, ArrowRight } from "lucide-react";
+import { Smartphone, ArrowRight } from "lucide-react";
 
 export function OpenProduct() {
   const { id } = useParams();
@@ -106,24 +105,7 @@ export function OpenProduct() {
                 <p style={{ fontSize: "12px", color: "var(--text-light)", marginBottom: "12px" }}>
                   Don't have the WeaveHub app installed yet?
                 </p>
-                <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
-                  <a
-                    href={ANDROID_STORE_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn btn-outline btn-sm"
-                  >
-                    Google Play <ExternalLink size={12} />
-                  </a>
-                  <a
-                    href={IOS_STORE_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn btn-outline btn-sm"
-                  >
-                    App Store <ExternalLink size={12} />
-                  </a>
-                </div>
+                <StoreButtons productId={id} />
               </div>
             )}
           </div>
